@@ -62,7 +62,9 @@ just uninstall
 Failed commands and malformed responses leave the last successful schedule in
 place and show the error in the panel. Cancelled events and declined
 invitations are hidden. The schedule includes all events, while the bar can be
-limited to events containing a Google Meet URL.
+limited to events containing a Google Meet URL. Multi-day events appear on
+each local calendar day they occupy, starting with today; event end dates are
+treated as exclusive.
 
 ### Settings
 

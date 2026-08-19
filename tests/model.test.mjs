@@ -100,6 +100,34 @@ test("schedule grouping uses today, tomorrow, and dated headings", () => {
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
 })
 
+test("schedule repeats multi-day all-day events from today through their exclusive end", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-17", {
+      title: "Trip",
+      all_day: true,
+      end: "2026-08-22"
+    })
+  ]))
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+
+  assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
+  assert.deepEqual(groups.map(group => group.title), ["TODAY", "TOMORROW", "FRI 21 AUG"])
+  assert.deepEqual(groups.map(group => group.items[0].title), ["Trip", "Trip", "Trip"])
+})
+
+test("schedule repeats timed events on each occupied day and excludes a midnight end", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T22:00:00+01:00", {
+      title: "Hackathon",
+      end: "2026-08-22T00:00:00+01:00"
+    })
+  ]))
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+
+  assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
+  assert.deepEqual(groups.map(group => group.items[0].title), ["Hackathon", "Hackathon", "Hackathon"])
+})
+
 test("bar labels cover one minute, hours left, and cross-day events", () => {
   const oneMinute = Model.normalizedEvent(event("2026-08-19T10:01:00+01:00", { title: "Standup" }))
   assert.equal(Model.formatLabel(oneMinute, NOW, 40), "Standup · in 1 min")

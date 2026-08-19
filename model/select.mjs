@@ -1,4 +1,4 @@
-import { DAY_MS, localDateKey } from "./dates.mjs"
+import { DAY_MS, addLocalDays, localDateKey } from "./dates.mjs"
 import { daySectionTitle } from "./format.mjs"
 
 function nowMillis(now) {
@@ -11,6 +11,46 @@ function compareUpcoming(a, b) {
   const bDuration = b.endMs - b.startMs
   if (aDuration !== bDuration) return bDuration - aDuration
   return String(a.title || "").localeCompare(String(b.title || ""))
+}
+
+function localDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function allDayDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""))
+  if (!match) return null
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return isNaN(date.getTime()) ? null : date
+}
+
+// Match rencal's agenda semantics: enumerate every viewer-local day occupied by
+// an event. Event ends are exclusive, so an all-day DTEND and a timed event
+// ending exactly at midnight do not occupy the end date.
+function occupiedLocalDays(event, rangeStart, rangeEnd) {
+  let first = event.all_day ? allDayDate(event.start) : localDay(new Date(event.startMs))
+  let last = event.all_day ? allDayDate(event.end) : localDay(new Date(event.endMs))
+  if (!first || !last || isNaN(first.getTime()) || isNaN(last.getTime())) return []
+
+  if (event.all_day) {
+    last = addLocalDays(last, -1)
+  } else {
+    const end = new Date(event.endMs)
+    const endsAtMidnight = end.getHours() === 0
+      && end.getMinutes() === 0
+      && end.getSeconds() === 0
+      && end.getMilliseconds() === 0
+    if (endsAtMidnight && event.endMs > event.startMs) last = addLocalDays(last, -1)
+  }
+
+  if (last < first) last = first
+  if (first < rangeStart) first = rangeStart
+  if (last > rangeEnd) last = rangeEnd
+  if (last < first) return []
+
+  const days = []
+  for (let day = first; day <= last; day = addLocalDays(day, 1)) days.push(day)
+  return days
 }
 
 export function buildUpcoming(events, now, options) {
@@ -42,22 +82,29 @@ export function nextMeeting(events, now, options) {
 }
 
 export function buildScheduleGroups(events, now, options) {
-  const config = Object.assign({}, options || {}, { showOnlyWithVideoLink: false })
+  const optionsConfig = options || {}
+  const lookaheadDays = Math.max(1, parseInt(optionsConfig.lookaheadDays, 10) || 3)
+  const config = Object.assign({}, optionsConfig, { showOnlyWithVideoLink: false })
   const valid = buildUpcoming(events, now, config)
-  const groups = []
   const byKey = {}
+  const currentDate = new Date(nowMillis(now))
+  const rangeStart = localDay(currentDate)
+  const rangeEnd = addLocalDays(rangeStart, lookaheadDays)
 
   for (let i = 0; i < valid.length; i++) {
     const event = valid[i]
-    const date = new Date(event.startMs)
-    const key = event.dayKey || localDateKey(date)
-    if (!byKey[key]) {
-      byKey[key] = { key: key, title: daySectionTitle(event.startMs, now), items: [] }
-      groups.push(byKey[key])
+    const days = occupiedLocalDays(event, rangeStart, rangeEnd)
+    for (let j = 0; j < days.length; j++) {
+      const date = days[j]
+      const key = localDateKey(date)
+      if (!byKey[key]) {
+        byKey[key] = { key: key, title: daySectionTitle(date.getTime(), now), items: [] }
+      }
+      byKey[key].items.push(event)
     }
-    byKey[key].items.push(event)
   }
-  return groups
+
+  return Object.keys(byKey).sort().map(function(key) { return byKey[key] })
 }
 
 export function upcomingToday(events, now) {
