@@ -258,8 +258,8 @@ BarWidget {
   }
 
   readonly property string tooltipLine: {
-    if (!configured && loadError !== "") return "Caldir Quickshell Widget — " + loadError + "\nClick for setup help"
-    if (!nextMeeting) return "Caldir Quickshell Widget — No upcoming meetings" + (loadError !== "" ? "\n" + loadError : "")
+    if (!configured && loadError !== "") return loadError + "\nClick for setup help"
+    if (!nextMeeting) return "No upcoming meetings" + (loadError !== "" ? "\n" + loadError : "")
     var title = nextMeeting.title || "(Untitled)"
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs)
     var status = Model.relativeStatus(nextMeeting, now)
