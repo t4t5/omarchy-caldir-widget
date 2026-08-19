@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "caldir-quickshell-widget",
+  "name": "Caldir Quickshell Widget",
+  "version": "1.0.0",
+  "author": "t4t5",
+  "license": "MIT",
+  "description": "A caldir-powered meeting countdown and multi-day schedule",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Caldir Quickshell Widget",
+    "description": "Shows the next event in the bar and a schedule on click",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "daysAhead": 3,
+      "pollSeconds": 60,
+      "calendar": "",
+      "showOnlyWithVideoLink": true,
+      "maxTitleLength": 28,
+      "browserCommand": "",
+      "calendarUrlBase": "https://calendar.google.com/calendar"
+    },
+    "schema": [
+      {
+        "key": "daysAhead",
+        "type": "integer",
+        "label": "Days ahead",
+        "min": 1,
+        "max": 30,
+        "defaultValue": 3
+      },
+      {
+        "key": "pollSeconds",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 15,
+        "max": 3600,
+        "step": 15,
+        "defaultValue": 60
+      },
+      {
+        "key": "calendar",
+        "type": "string",
+        "label": "Calendar slug",
+        "defaultValue": "",
+        "description": "Optional caldir calendar slug. Leave blank to include every calendar."
+      },
+      {
+        "key": "showOnlyWithVideoLink",
+        "type": "boolean",
+        "label": "Only meetings with video links",
+        "defaultValue": true
+      },
+      {
+        "key": "maxTitleLength",
+        "type": "integer",
+        "label": "Maximum bar label length",
+        "min": 8,
+        "max": 80,
+        "defaultValue": 28
+      },
+      {
+        "key": "browserCommand",
+        "type": "string",
+        "label": "Browser command",
+        "defaultValue": "",
+        "description": "Optional command used instead of xdg-open."
+      },
+      {
+        "key": "calendarUrlBase",
+        "type": "string",
+        "label": "Google Calendar URL",
+        "defaultValue": "https://calendar.google.com/calendar"
+      }
+    ]
+  }
+}
