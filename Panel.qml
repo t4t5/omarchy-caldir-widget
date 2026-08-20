@@ -424,7 +424,7 @@ Panel {
             Column {
               id: scheduleColumn
               width: parent.width
-              spacing: Style.space(10)
+              spacing: Style.space(8)
 
               Repeater {
                 model: root.scheduleGroups
@@ -432,7 +432,6 @@ Panel {
                 Item {
                   id: groupItem
                   required property var modelData
-                  required property int index
                   readonly property var group: modelData
                   width: parent.width
                   height: groupColumn.implicitHeight
@@ -441,19 +440,28 @@ Panel {
                   Column {
                     id: groupColumn
                     width: parent.width
-                    spacing: Style.space(4)
+                    spacing: Style.space(2)
 
-                    PanelSeparator {
-                      visible: groupItem.index > 0 || heroItem.visible
-                      foreground: root.contentForeground
-                      strength: 0.1
-                    }
+                    Item {
+                      width: parent.width
+                      height: Style.space(18)
 
-                    PanelSectionHeader {
-                      text: groupItem.group.title
-                      foreground: root.contentForeground
-                      fontFamily: root.contentFontFamily
-                      leftPadding: Style.space(4)
+                      PanelSectionHeader {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: groupItem.group.title
+                        foreground: root.contentForeground
+                        fontFamily: root.contentFontFamily
+                      }
+
+                      Text {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: groupItem.group.items.length
+                        color: Qt.darker(root.contentForeground, 2.1)
+                        font.family: root.contentFontFamily
+                        font.pixelSize: Style.font.caption
+                      }
                     }
 
                     Repeater {
@@ -466,13 +474,73 @@ Panel {
                         readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
                         readonly property bool cancelledOrDeclined: modelData.cancelled === true || modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
+                        readonly property color dim: Qt.darker(root.contentForeground, 1.55)
                         width: parent.width
                         radius: Style.cornerRadius
                         color: rowMouse.containsMouse
                           ? Style.hoverFillFor(root.contentForeground, Color.accent)
                           : "transparent"
                         opacity: ended ? 0.45 : 1.0
-                        implicitHeight: Math.max(Style.space(32), eventLayout.implicitHeight + Style.space(8))
+                        implicitHeight: Math.max(Style.space(26), rowLabel.implicitHeight + Style.space(8))
+
+                        Rectangle {
+                          id: stripe
+                          anchors.verticalCenter: parent.verticalCenter
+                          x: Style.space(6)
+                          width: Style.space(3)
+                          height: parent.height - Style.space(9)
+                          radius: width / 2
+                          color: Color.accent
+                          opacity: eventRow.cancelledOrDeclined ? 0.35 : 1.0
+                        }
+
+                        Text {
+                          id: rowTime
+                          anchors.verticalCenter: parent.verticalCenter
+                          anchors.left: stripe.right
+                          anchors.leftMargin: Style.space(8)
+                          width: Style.space(52)
+                          text: eventRow.meeting.all_day ? "all day" : Model.hm(eventRow.meeting.startMs)
+                          color: eventRow.dim
+                          font.family: root.contentFontFamily
+                          font.pixelSize: Style.font.caption
+                          elide: Text.ElideRight
+                        }
+
+                        Column {
+                          id: rowLabel
+                          anchors.verticalCenter: parent.verticalCenter
+                          anchors.left: rowTime.right
+                          anchors.leftMargin: Style.space(8)
+                          anchors.right: parent.right
+                          anchors.rightMargin: Style.space(8)
+                          spacing: Style.space(1)
+
+                          Text {
+                            width: parent.width
+                            textFormat: Text.PlainText
+                            text: eventRow.meeting.title || "(Untitled)"
+                            color: rowMouse.containsMouse
+                              ? Style.hoverStateColor(root.contentForeground, Color.accent)
+                              : root.contentForeground
+                            font.family: root.contentFontFamily
+                            font.pixelSize: Style.font.bodySmall
+                            font.italic: eventRow.tentative
+                            font.strikeout: eventRow.cancelledOrDeclined
+                            elide: Text.ElideRight
+                          }
+
+                          Text {
+                            width: parent.width
+                            textFormat: Text.PlainText
+                            visible: eventRow.meeting.location !== "" && !eventRow.meeting.meetUrl
+                            text: eventRow.meeting.location
+                            color: eventRow.dim
+                            font.family: root.contentFontFamily
+                            font.pixelSize: Style.font.caption
+                            elide: Text.ElideRight
+                          }
+                        }
 
                         MouseArea {
                           id: rowMouse
@@ -480,63 +548,11 @@ Panel {
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
                           onClicked: root.join(eventRow.meeting)
-                        }
 
-                        RowLayout {
-                          id: eventLayout
-                          anchors.left: parent.left
-                          anchors.right: parent.right
-                          anchors.verticalCenter: parent.verticalCenter
-                          anchors.leftMargin: Style.space(10)
-                          anchors.rightMargin: Style.space(10)
-                          spacing: Style.space(8)
-
-                          Text {
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: Style.space(44)
-                            text: eventRow.meeting.all_day ? "ALL DAY" : Model.hm(eventRow.meeting.startMs)
-                            color: Qt.darker(root.contentForeground, 1.3)
-                            font.family: root.contentFontFamily
-                            font.pixelSize: eventRow.meeting.all_day ? Style.font.caption : Style.font.bodySmall
-                            font.bold: true
-                          }
-
-                          Text {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            text: eventRow.meeting.title || "(Untitled)"
-                            color: eventRow.tentative
-                              ? Qt.darker(root.contentForeground, 1.35)
-                              : root.contentForeground
-                            font.family: root.contentFontFamily
-                            font.pixelSize: Style.font.body
-                            font.italic: eventRow.tentative
-                            font.strikeout: eventRow.cancelledOrDeclined
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                          }
-
-                          Text {
-                            visible: !eventRow.meeting.all_day
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: Style.space(34)
-                            horizontalAlignment: Text.AlignRight
-                            text: Model.formatDuration(eventRow.meeting.startMs, eventRow.meeting.endMs)
-                            color: Qt.darker(root.contentForeground, 1.6)
-                            font.family: root.contentFontFamily
-                            font.pixelSize: Style.font.caption
-                          }
-
-                          Text {
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: Style.space(16)
-                            horizontalAlignment: Text.AlignRight
-                            text: eventRow.ended ? "󰄬" : eventRow.meeting.meetUrl ? "" : "󰃯"
-                            color: eventRow.ended || !eventRow.meeting.meetUrl
-                              ? Qt.darker(root.contentForeground, 1.5)
-                              : Color.accent
-                            font.family: root.contentFontFamily
-                            font.pixelSize: Style.font.bodySmall
+                          PanelToolTip {
+                            visible: rowMouse.containsMouse && eventRow.meeting.description !== ""
+                            text: eventRow.meeting.description
+                            fontFamily: root.contentFontFamily
                           }
                         }
                       }
