@@ -61,10 +61,19 @@ just uninstall
 
 Failed commands and malformed responses leave the last successful schedule in
 place and show the error in the panel. Cancelled events and declined
-invitations are hidden. The schedule includes all events, while the bar can be
-limited to events containing a Google Meet URL. Multi-day events appear on
-each local calendar day they occupy, starting with today; event end dates are
-treated as exclusive.
+invitations are hidden. Tentative and unanswered invitations stay in the
+schedule, shown dimmed and italic, but never drive the bar. The schedule
+includes all events, while the bar can be limited to events containing a
+Google Meet URL. Multi-day events appear on each local calendar day they
+occupy, starting with today; event end dates are treated as exclusive. Events
+that already ended today remain in the schedule, dimmed with a check mark.
+
+The bar meeting follows MeetingBar's selection rules: a meeting with under a
+minute left is never shown, and a meeting in progress hands the bar to the
+following one once it starts within ten minutes, so back-to-back calls show
+the meeting you need to join next. Meet links wrapped in Outlook SafeLinks or
+Google `google.com/url?q=` redirects are unwrapped before detection, and the
+link found in the event location wins over one in the description.
 
 ### Settings
 
@@ -76,10 +85,12 @@ treated as exclusive.
 | `showOnlyWithVideoLink` | `true` | Limit the bar/hero meeting to events with Meet URLs |
 | `maxTitleLength` | `28` | Maximum approximate bar-label length |
 | `browserCommand` | `""` | Command used instead of `xdg-open` |
+| `meetAccount` | `""` | Google account email appended to Meet links as `authuser` |
 | `calendarUrlBase` | Google Calendar | Base URL for “Open in Calendar” |
 
 For a specific Google account, set `calendarUrlBase` to a URL such as
-`https://calendar.google.com/calendar/u/2`.
+`https://calendar.google.com/calendar/u/2`, and set `meetAccount` to that
+account's email so joined Meet calls open in the same profile.
 
 ### IPC
 

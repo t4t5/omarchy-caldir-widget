@@ -61,6 +61,48 @@ test("findMeetUrl scans both location and description", () => {
   assert.equal(Model.findMeetUrl("not a call"), "")
 })
 
+test("meet links survive Google redirect and Outlook SafeLinks wrappers", () => {
+  const redirect = "https://www.google.com/url?q=https%3A%2F%2Fmeet.google.com%2Fabc-defg-hij&sa=D&source=calendar"
+  assert.equal(Model.findMeetUrl(redirect), "https://meet.google.com/abc-defg-hij")
+
+  const safeLink = "https://eur01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmeet.google.com%2Fklm-nopq-rst&data=05%7C01"
+  assert.equal(Model.findMeetUrl(safeLink), "https://meet.google.com/klm-nopq-rst")
+
+  const nested = "https://www.google.com/url?q=" + encodeURIComponent(redirect)
+  assert.equal(Model.findMeetUrl(nested), "https://meet.google.com/abc-defg-hij")
+})
+
+test("a malformed redirect escape never blocks later links", () => {
+  const mixed = "https://www.google.com/url?q=%ZZbroken and https://www.google.com/url?q=https%3A%2F%2Fmeet.google.com%2Fabc-defg-hij"
+  assert.equal(Model.findMeetUrl(mixed), "https://meet.google.com/abc-defg-hij")
+})
+
+test("location outranks description and the longest match wins per source", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", {
+      location: "https://meet.google.com/abc",
+      description: "https://meet.google.com/abc-defg-hij"
+    })
+  ]))
+  assert.equal(parsed[0].meetUrl, "https://meet.google.com/abc")
+
+  const both = "https://meet.google.com/abc then https://meet.google.com/abc-defg-hij"
+  assert.equal(Model.findMeetUrl(both), "https://meet.google.com/abc-defg-hij")
+})
+
+test("meetUrlForAccount pins authuser without disturbing other parameters", () => {
+  assert.equal(
+    Model.meetUrlForAccount("https://meet.google.com/abc-defg-hij", "me@example.com"),
+    "https://meet.google.com/abc-defg-hij?authuser=me%40example.com"
+  )
+  assert.equal(
+    Model.meetUrlForAccount("https://meet.google.com/abc?authuser=0&hs=122", "me@example.com"),
+    "https://meet.google.com/abc?hs=122&authuser=me%40example.com"
+  )
+  assert.equal(Model.meetUrlForAccount("https://meet.google.com/abc", ""), "https://meet.google.com/abc")
+  assert.equal(Model.meetUrlForAccount("", "me@example.com"), "")
+})
+
 test("nextMeeting chooses an ongoing call before future calls", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T09:30:00+01:00", {
@@ -74,6 +116,87 @@ test("nextMeeting chooses an ongoing call before future calls", () => {
     })
   ]))
   assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Ongoing")
+})
+
+test("an ongoing call hands the bar over ten minutes before the next one", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T09:30:00+01:00", {
+      title: "Ongoing",
+      end: "2026-08-19T10:30:00+01:00",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    }),
+    event("2026-08-19T10:08:00+01:00", {
+      title: "Next",
+      description: "https://meet.google.com/ddd-eeee-fff"
+    })
+  ]))
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Next")
+})
+
+test("the handover never skips ahead between two future calls", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:02:00+01:00", {
+      title: "First",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    }),
+    event("2026-08-19T10:08:00+01:00", {
+      title: "Second",
+      description: "https://meet.google.com/ddd-eeee-fff"
+    })
+  ]))
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "First")
+})
+
+test("an event ending inside the one-minute grace window is never next", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T09:00:00+01:00", {
+      title: "Almost over",
+      end: "2026-08-19T10:00:30+01:00",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    }),
+    event("2026-08-19T14:00:00+01:00", {
+      title: "Afternoon",
+      description: "https://meet.google.com/ddd-eeee-fff"
+    })
+  ]))
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Afternoon")
+})
+
+test("tentative invitations stay off the bar but keep their schedule slot", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:30:00+01:00", {
+      title: "Maybe",
+      rsvp: "Tentative",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    }),
+    event("2026-08-19T11:00:00+01:00", {
+      title: "Sure",
+      rsvp: "needs-action",
+      description: "https://meet.google.com/ddd-eeee-fff"
+    }),
+    event("2026-08-19T12:00:00+01:00", {
+      title: "Confirmed",
+      description: "https://meet.google.com/ggg-hhhh-iii"
+    })
+  ]))
+  assert.equal(parsed[0].tentative, true)
+  assert.equal(parsed[1].tentative, true)
+  assert.equal(parsed[2].tentative, false)
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Confirmed")
+
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  assert.deepEqual(groups[0].items.map(item => item.title), ["Maybe", "Sure", "Confirmed"])
+})
+
+test("the schedule keeps events that already ended today", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-18T11:00:00+01:00", { title: "Yesterday" }),
+    event("2026-08-19T08:00:00+01:00", { title: "Done", end: "2026-08-19T08:30:00+01:00" }),
+    event("2026-08-19T11:00:00+01:00", { title: "Later" })
+  ]))
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  assert.deepEqual(groups.map(group => group.key), ["2026-08-19"])
+  assert.deepEqual(groups[0].items.map(item => item.title), ["Done", "Later"])
 })
 
 test("the video-link filter only affects the bar meeting list", () => {

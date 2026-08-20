@@ -10,6 +10,8 @@ export {
 
 export {
   findMeetUrl,
+  unwrapWrappedLinks,
+  meetUrlForAccount,
   normalizedEvent,
   parseAgenda
 } from "./model/events.mjs"

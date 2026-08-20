@@ -17,6 +17,7 @@ BarWidget {
   readonly property string calendarSlug: String(setting("calendar", "") || "").trim()
   readonly property int maxTitleLength: Math.max(8, Math.min(80, Number(setting("maxTitleLength", 28)) || 28))
   readonly property string browserCommand: String(setting("browserCommand", "") || "").trim()
+  readonly property string meetAccount: String(setting("meetAccount", "") || "").trim()
   readonly property string calendarUrlBase: String(setting("calendarUrlBase", "https://calendar.google.com/calendar") || "").trim()
   readonly property bool showOnlyWithVideoLink: {
     var value = setting("showOnlyWithVideoLink", true)
@@ -105,7 +106,10 @@ BarWidget {
       lookaheadDays: daysAhead,
       maxRows: 20
     })
-    nextMeeting = meetings.length > 0 ? meetings[0] : null
+    nextMeeting = Model.nextMeeting(rawEvents, now, {
+      lookaheadDays: daysAhead,
+      showOnlyWithVideoLink: showOnlyWithVideoLink
+    })
     meetingDataChanged()
   }
 
@@ -121,7 +125,7 @@ BarWidget {
   }
 
   function joinMeeting(event) {
-    if (event && event.meetUrl) openUrl(event.meetUrl)
+    if (event && event.meetUrl) openUrl(Model.meetUrlForAccount(event.meetUrl, meetAccount))
   }
 
   function openCalendar(event) {

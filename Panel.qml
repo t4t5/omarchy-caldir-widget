@@ -463,11 +463,14 @@ Panel {
                         id: eventRow
                         required property var modelData
                         readonly property var meeting: modelData
+                        readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
+                        readonly property bool tentative: modelData.tentative === true
                         width: parent.width
                         radius: Style.cornerRadius
                         color: rowMouse.containsMouse
                           ? Style.hoverFillFor(root.contentForeground, Color.accent)
                           : "transparent"
+                        opacity: ended ? 0.45 : 1.0
                         implicitHeight: Math.max(Style.space(32), eventLayout.implicitHeight + Style.space(8))
 
                         MouseArea {
@@ -501,9 +504,12 @@ Panel {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
                             text: eventRow.meeting.title || "(Untitled)"
-                            color: root.contentForeground
+                            color: eventRow.tentative
+                              ? Qt.darker(root.contentForeground, 1.35)
+                              : root.contentForeground
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.body
+                            font.italic: eventRow.tentative
                             elide: Text.ElideRight
                             maximumLineCount: 1
                           }
@@ -523,8 +529,10 @@ Panel {
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: Style.space(16)
                             horizontalAlignment: Text.AlignRight
-                            text: eventRow.meeting.meetUrl ? "" : "󰃯"
-                            color: eventRow.meeting.meetUrl ? Color.accent : Qt.darker(root.contentForeground, 1.5)
+                            text: eventRow.ended ? "󰄬" : eventRow.meeting.meetUrl ? "" : "󰃯"
+                            color: eventRow.ended || !eventRow.meeting.meetUrl
+                              ? Qt.darker(root.contentForeground, 1.5)
+                              : Color.accent
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.bodySmall
                           }
