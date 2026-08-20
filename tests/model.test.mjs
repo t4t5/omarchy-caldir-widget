@@ -36,14 +36,20 @@ test("parseAgenda normalizes and sorts a bare caldir array", () => {
   assert.equal(parsed[0].startMs, Date.parse("2026-08-19T11:00:00+01:00"))
 })
 
-test("parseAgenda drops cancelled, declined, and invalid events", () => {
+test("parseAgenda keeps cancelled and declined events but drops invalid events", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T11:00:00+01:00"),
     event("2026-08-19T12:00:00+01:00", { status: "CANCELLED" }),
     event("2026-08-19T13:00:00+01:00", { rsvp: "Declined" }),
     event("not-a-date")
   ]))
-  assert.equal(parsed.length, 1)
+  assert.equal(parsed.length, 3)
+  assert.equal(parsed[0].cancelled, false)
+  assert.equal(parsed[0].declined, false)
+  assert.equal(parsed[1].cancelled, true)
+  assert.equal(parsed[1].declined, false)
+  assert.equal(parsed[2].cancelled, false)
+  assert.equal(parsed[2].declined, true)
 })
 
 test("parseAgenda rejects malformed and non-array output", () => {
@@ -186,6 +192,34 @@ test("tentative invitations stay off the bar but keep their schedule slot", () =
 
   const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
   assert.deepEqual(groups[0].items.map(item => item.title), ["Maybe", "Sure", "Confirmed"])
+})
+
+test("cancelled and declined events stay off the bar but keep their schedule slots", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:30:00+01:00", {
+      title: "Cancelled",
+      status: "cancelled",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    }),
+    event("2026-08-19T11:00:00+01:00", {
+      title: "Declined",
+      rsvp: "declined",
+      description: "https://meet.google.com/ddd-eeee-fff"
+    }),
+    event("2026-08-19T12:00:00+01:00", {
+      title: "Confirmed",
+      description: "https://meet.google.com/ggg-hhhh-iii"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Confirmed")
+  assert.deepEqual(
+    Model.buildUpcoming(parsed, NOW, { lookaheadDays: 3 }).map(item => item.title),
+    ["Confirmed"]
+  )
+
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  assert.deepEqual(groups[0].items.map(item => item.title), ["Cancelled", "Declined", "Confirmed"])
 })
 
 test("the schedule keeps events that already ended today", () => {

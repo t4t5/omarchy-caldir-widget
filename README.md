@@ -61,8 +61,9 @@ just uninstall
 
 Failed commands and malformed responses leave the last successful schedule in
 place and show the error in the panel. Cancelled events and declined
-invitations are hidden. Tentative and unanswered invitations stay in the
-schedule, shown dimmed and italic, but never drive the bar. The schedule
+invitations stay in the schedule with a strikethrough, but never drive the
+bar. Tentative and unanswered invitations stay in the schedule, shown dimmed
+and italic, but never drive the bar. The schedule
 includes all events, while the bar can be limited to events containing a
 Google Meet URL. Multi-day events appear on each local calendar day they
 occupy, starting with today; event end dates are treated as exclusive. Events

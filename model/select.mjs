@@ -65,6 +65,7 @@ export function buildUpcoming(events, now, options) {
   for (let i = 0; i < (events || []).length; i++) {
     const event = events[i]
     if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
+    if (event.cancelled === true || event.declined === true) continue
     if (event.endMs < current || event.startMs > horizon) continue
     if (config.excludeAllDay === true && event.all_day === true) continue
     if (config.excludeTentative === true && event.tentative === true) continue

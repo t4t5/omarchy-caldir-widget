@@ -114,7 +114,6 @@ export function normalizedEvent(raw) {
 
   const status = lower(raw.status)
   const rsvp = lower(raw.rsvp)
-  if (status === "cancelled" || rsvp === "declined") return null
 
   const parsedEndMs = Date.parse(raw.end)
   const endMs = isNaN(parsedEndMs) ? startMs : Math.max(startMs, parsedEndMs)
@@ -133,6 +132,8 @@ export function normalizedEvent(raw) {
   event.description = text(raw.description)
   event.status = status
   event.rsvp = rsvp
+  event.cancelled = status === "cancelled"
+  event.declined = rsvp === "declined"
   event.tentative = rsvp === "tentative" || rsvp === "needs-action"
   event.recurring = raw.recurring === true
   event.startMs = startMs

@@ -464,6 +464,7 @@ Panel {
                         required property var modelData
                         readonly property var meeting: modelData
                         readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
+                        readonly property bool cancelledOrDeclined: modelData.cancelled === true || modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
                         width: parent.width
                         radius: Style.cornerRadius
@@ -510,6 +511,7 @@ Panel {
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.body
                             font.italic: eventRow.tentative
+                            font.strikeout: eventRow.cancelledOrDeclined
                             elide: Text.ElideRight
                             maximumLineCount: 1
                           }
