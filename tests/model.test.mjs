@@ -57,14 +57,36 @@ test("parseAgenda rejects malformed and non-array output", () => {
   assert.throws(() => Model.parseAgenda('{"events":[]}'), /JSON array/)
 })
 
-test("findMeetUrl scans both location and description", () => {
+test("findVideoUrl scans both location and description", () => {
+  const zoomUrl = "https://us02web.zoom.us/j/123456789?pwd=unchanged"
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T11:00:00+01:00", { location: "Room · https://meet.google.com/abc-defg-hij" }),
-    event("2026-08-19T12:00:00+01:00", { description: "Join HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg." })
+    event("2026-08-19T12:00:00+01:00", { description: "Join HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg." }),
+    event("2026-08-19T13:00:00+01:00", { location: zoomUrl })
   ]))
   assert.equal(parsed[0].meetUrl, "https://meet.google.com/abc-defg-hij")
+  assert.equal(parsed[0].videoUrl, "https://meet.google.com/abc-defg-hij")
   assert.equal(parsed[1].meetUrl, "HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg")
-  assert.equal(Model.findMeetUrl("not a call"), "")
+  assert.equal(parsed[2].videoUrl, zoomUrl)
+  assert.equal(parsed[2].meetUrl, zoomUrl)
+  assert.equal(Model.findVideoUrl("not a call"), "")
+})
+
+test("findVideoUrl detects the supported video providers", () => {
+  const cases = [
+    ["Google Meet", "https://meet.google.com/abc-defg-hij"],
+    ["Zoom meeting", "https://us02web.zoom.us/j/123456789?pwd=secret"],
+    ["Zoom webinar", "https://acme.zoom.us/w/987654321?tk=token"],
+    ["Microsoft Teams", "https://teams.microsoft.com/l/meetup-join/19%3ameeting_example?context=abc&anon=true"],
+    ["Microsoft Teams short link", "https://teams.live.com/meet/9425716001426?p=0SystrMw2goKHi8LK6"],
+    ["Cisco Webex", "https://example.webex.com/meet/alice.smith?token=abc"],
+    ["Jitsi", "https://meet.jit.si/team-standup#config.prejoinPageEnabled=false"],
+    ["Whereby", "https://whereby.com/team-room?roomKey=abc"]
+  ]
+
+  for (const [provider, url] of cases) {
+    assert.equal(Model.findVideoUrl("Join " + url), url, provider)
+  }
 })
 
 test("meet links survive Google redirect and Outlook SafeLinks wrappers", () => {
@@ -76,6 +98,12 @@ test("meet links survive Google redirect and Outlook SafeLinks wrappers", () => 
 
   const nested = "https://www.google.com/url?q=" + encodeURIComponent(redirect)
   assert.equal(Model.findMeetUrl(nested), "https://meet.google.com/abc-defg-hij")
+})
+
+test("a Zoom link survives an Outlook SafeLinks wrapper", () => {
+  const zoom = "https://us02web.zoom.us/j/123456789?pwd=secret"
+  const safeLink = "https://eur01.safelinks.protection.outlook.com/?url=" + encodeURIComponent(zoom) + "&data=05%7C01"
+  assert.equal(Model.findVideoUrl(safeLink), zoom)
 })
 
 test("a malformed redirect escape never blocks later links", () => {
@@ -94,19 +122,6 @@ test("location outranks description and the longest match wins per source", () =
 
   const both = "https://meet.google.com/abc then https://meet.google.com/abc-defg-hij"
   assert.equal(Model.findMeetUrl(both), "https://meet.google.com/abc-defg-hij")
-})
-
-test("meetUrlForAccount pins authuser without disturbing other parameters", () => {
-  assert.equal(
-    Model.meetUrlForAccount("https://meet.google.com/abc-defg-hij", "me@example.com"),
-    "https://meet.google.com/abc-defg-hij?authuser=me%40example.com"
-  )
-  assert.equal(
-    Model.meetUrlForAccount("https://meet.google.com/abc?authuser=0&hs=122", "me@example.com"),
-    "https://meet.google.com/abc?hs=122&authuser=me%40example.com"
-  )
-  assert.equal(Model.meetUrlForAccount("https://meet.google.com/abc", ""), "https://meet.google.com/abc")
-  assert.equal(Model.meetUrlForAccount("", "me@example.com"), "")
 })
 
 test("nextMeeting chooses an ongoing call before future calls", () => {
@@ -323,7 +338,6 @@ test("queryRange uses local calendar-day arithmetic", () => {
 })
 
 test("calendar and update labels are stable", () => {
-  assert.equal(Model.eventCalendarUrl(null, "https://calendar.google.com/calendar/u/2/"), "https://calendar.google.com/calendar/u/2/r")
   assert.equal(Model.formatUpdated(new Date(NOW.getTime() - 5 * Model.MINUTE_MS), NOW), "5m ago")
   assert.equal(Model.truncate("A very long event", 8), "A very…")
 })

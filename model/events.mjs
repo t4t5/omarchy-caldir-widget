@@ -14,7 +14,7 @@ function lower(value) {
 // must make forward progress each pass so one malformed link can never wedge
 // a refresh. Ported from MeetingBar's MeetingLinkDetector.
 const MAX_UNWRAP_PASSES = 32
-const SAFE_LINK_RE = /https:\/\/\S+\.safelinks\.protection\.outlook\.com\/\S+url=(\S*)/
+const SAFE_LINK_RE = /https:\/\/[^\s/"'<>]+\.safelinks\.protection\.outlook\.com\/[^\s"'<>]*?[?&]url=([^\s&"'<>]*)(?:&[^\s"'<>]*)?/
 const GOOGLE_REDIRECT_RE = /https:\/\/(?:www\.)?google\.[a-z]{2,}(?:\.[a-z]{2,})?\/url\?q=([^\s&"'<>]+)(?:&(?:amp;)?[A-Za-z][A-Za-z0-9_]*=[^\s&"'<>]*)*/g
 
 function decodedPercent(value) {
@@ -70,41 +70,37 @@ export function unwrapWrappedLinks(value) {
   return current
 }
 
-// Longest match wins so a link carrying extra path always beats a truncated
-// copy of itself.
-export function findMeetUrl(value) {
+// Initial provider catalogue ported from MeetingBar's MeetingLinkDetector.
+// Keep these as separate expressions: it makes adding providers less risky
+// than growing one large expression whose alternatives can shadow each other.
+const VIDEO_LINK_PATTERNS = [
+  /https?:\/\/meet\.google\.com\/[_a-z0-9-]+/gi,
+  /https:\/\/(?:[a-z0-9-.]+)?zoom(?:-x)?\.(?:us|com|com\.cn|de)\/(?:my|[a-z]{1,2}|webinar)\/[-a-z0-9()@:%_+.~#?&=/]*/gi,
+  /https?:\/\/(?:(?:gov\.)?teams\.microsoft\.(?:com|us)|teams\.live\.com)\/(?:l\/meetup-join\/[a-z0-9_%/=+.?-]+(?:&[^\s"'<>]+)?|meet\/\d+\?p=[a-z0-9_-]+(?:&[^\s"'<>]+)?)/gi,
+  /https?:\/\/(?:[a-z0-9-]+\.)?webex\.com(?:(?:\/[-a-z0-9]+\/j\.php\?MTID=[a-z0-9]+(?:&[^\s"'<>]*)?)|(?:\/(?:meet|join)\/[-a-z0-9._@]+(?:\?[^\s"'<>]*)?))/gi,
+  /https?:\/\/meet\.jit\.si\/[^\s"'<>]*/gi,
+  /https?:\/\/whereby\.com\/[^\s"'<>]*/gi
+]
+
+// Longest match wins so a link carrying a password or token always beats a
+// truncated copy of itself.
+export function findVideoUrl(value) {
   const haystack = unwrapWrappedLinks(value)
   if (haystack.indexOf("://") === -1) return ""
-  const pattern = /https:\/\/meet\.google\.com\/[a-z0-9][a-z0-9-]*/gi
   let best = ""
-  let match
-  while ((match = pattern.exec(haystack)) !== null) {
-    if (match[0].length > best.length) best = match[0]
+  for (let i = 0; i < VIDEO_LINK_PATTERNS.length; i++) {
+    const pattern = VIDEO_LINK_PATTERNS[i]
+    pattern.lastIndex = 0
+    let match
+    while ((match = pattern.exec(haystack)) !== null) {
+      if (match[0].length > best.length) best = match[0]
+    }
   }
   return best
 }
 
-// Pins the Google account Meet opens with, replacing any authuser the link
-// already carries. Meet ignores the parameter when it is absent, so an empty
-// account leaves the link untouched.
-export function meetUrlForAccount(url, account) {
-  const link = text(url).trim()
-  const user = text(account).trim()
-  if (link === "" || user === "") return link
-  const hashIndex = link.indexOf("#")
-  const base = hashIndex === -1 ? link : link.slice(0, hashIndex)
-  const hash = hashIndex === -1 ? "" : link.slice(hashIndex)
-  const queryIndex = base.indexOf("?")
-  const path = queryIndex === -1 ? base : base.slice(0, queryIndex)
-  const query = queryIndex === -1 ? "" : base.slice(queryIndex + 1)
-  const params = []
-  const pieces = query === "" ? [] : query.split("&")
-  for (let i = 0; i < pieces.length; i++) {
-    if (pieces[i] !== "" && pieces[i].split("=")[0] !== "authuser") params.push(pieces[i])
-  }
-  params.push("authuser=" + encodeURIComponent(user))
-  return path + "?" + params.join("&") + hash
-}
+// Compatibility alias for custom imports and the existing event field name.
+export const findMeetUrl = findVideoUrl
 
 export function normalizedEvent(raw) {
   if (!raw || typeof raw !== "object") return null
@@ -139,7 +135,8 @@ export function normalizedEvent(raw) {
   event.startMs = startMs
   event.endMs = endMs
   event.dayKey = localDateKey(new Date(startMs))
-  event.meetUrl = findMeetUrl(event.location) || findMeetUrl(event.description)
+  event.videoUrl = findVideoUrl(event.location) || findVideoUrl(event.description)
+  event.meetUrl = event.videoUrl
   return event
 }
 

@@ -1,12 +1,11 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs.Commons
 import qs.Ui
 import "Model.mjs" as Model
 
 // Caldir Quickshell Widget — a local caldir-backed event countdown.
-// Left click opens the schedule, right click joins the next Meet, and middle
+// Left click opens the schedule, right click joins the next meeting, and middle
 // click pulls remote calendars before refreshing the local view.
 BarWidget {
   id: root
@@ -16,9 +15,6 @@ BarWidget {
   readonly property int pollSeconds: Math.max(15, Math.min(3600, Number(setting("pollSeconds", 60)) || 60))
   readonly property string calendarSlug: String(setting("calendar", "") || "").trim()
   readonly property int maxTitleLength: Math.max(8, Math.min(80, Number(setting("maxTitleLength", 28)) || 28))
-  readonly property string browserCommand: String(setting("browserCommand", "") || "").trim()
-  readonly property string meetAccount: String(setting("meetAccount", "") || "").trim()
-  readonly property string calendarUrlBase: String(setting("calendarUrlBase", "https://calendar.google.com/calendar") || "").trim()
   readonly property bool showOnlyWithVideoLink: {
     var value = setting("showOnlyWithVideoLink", true)
     if (value === undefined || value === null) return true
@@ -118,24 +114,52 @@ BarWidget {
     pullRefreshTimer.restart()
   }
 
-  function openUrl(url) {
-    if (!url || !bar || typeof bar.run !== "function") return
-    var quotedUrl = Util.shellQuote(url)
-    bar.run(browserCommand !== "" ? browserCommand + " " + quotedUrl : "xdg-open " + quotedUrl)
+  function eventValue(value) {
+    return value === undefined || value === null ? "" : String(value)
+  }
+
+  function handlerPath() {
+    var custom = String(setting("openScript", "") || "").trim()
+    return custom !== ""
+      ? custom
+      : Qt.resolvedUrl("bin/open-event").toString().replace("file://", "")
+  }
+
+  function handlerEnvironment(event) {
+    return {
+      "EVENT_UID": eventValue(event.uid),
+      "EVENT_INSTANCE_ID": eventValue(event.instance_id),
+      "EVENT_CALENDAR": eventValue(event.calendar),
+      "EVENT_TITLE": eventValue(event.title),
+      "EVENT_START": eventValue(event.start),
+      "EVENT_END": eventValue(event.end),
+      "EVENT_ALL_DAY": event && event.all_day === true ? "1" : "0",
+      "EVENT_RECURRING": event && event.recurring === true ? "1" : "0",
+      "EVENT_LOCATION": eventValue(event.location),
+      "EVENT_DESCRIPTION": eventValue(event.description),
+      "EVENT_STATUS": eventValue(event.status).toLowerCase(),
+      "EVENT_RSVP": eventValue(event.rsvp).toLowerCase(),
+      "EVENT_CONFERENCE_URL": eventValue(event.meetUrl)
+    }
+  }
+
+  function runHandler(event, action) {
+    if (!event) return
+    openProcess.command = [handlerPath(), action]
+    openProcess.environment = handlerEnvironment(event)
+    openProcess.running = true
   }
 
   function joinMeeting(event) {
-    if (event && event.meetUrl) openUrl(Model.meetUrlForAccount(event.meetUrl, meetAccount))
+    if (event && event.meetUrl) runHandler(event, "join")
   }
 
   function openCalendar(event) {
-    if (event) openUrl(Model.eventCalendarUrl(event, calendarUrlBase))
+    runHandler(event, "calendar")
   }
 
   function openEvent(event) {
-    if (!event) return
-    if (event.meetUrl) joinMeeting(event)
-    else openCalendar(event)
+    runHandler(event, "auto")
   }
 
   // Shape used by shell panel routing and the popout coordinator.
@@ -199,6 +223,12 @@ BarWidget {
       waitForEnd: true
     }
     onExited: function(exitCode) { root.finishRefresh(exitCode) }
+  }
+
+  Process {
+    id: openProcess
+    running: false
+    clearEnvironment: false
   }
 
   Timer {

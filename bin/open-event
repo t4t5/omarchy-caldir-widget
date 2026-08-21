@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+print_only=0
+action=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --print)
+      print_only=1
+      shift
+      ;;
+    auto|join|calendar)
+      [[ -z "$action" ]] || { echo "multiple actions supplied" >&2; exit 2; }
+      action="$1"
+      shift
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+[[ -n "$action" ]] || { echo "usage: open-event [--print] <auto|join|calendar>" >&2; exit 2; }
+
+conference_url="${EVENT_CONFERENCE_URL:-}"
+uid="${EVENT_UID:-}"
+instance_id="${EVENT_INSTANCE_ID:-}"
+
+urlencode() {
+  local text="$1" out="" char i
+  for (( i = 0; i < ${#text}; i++ )); do
+    char="${text:i:1}"
+    case "$char" in
+      [a-zA-Z0-9.~_-]) out+="$char" ;;
+      *) out+=$(printf '%%%02X' "'$char") ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+if [[ "$action" == "join" ]] || [[ "$action" == "auto" && -n "$conference_url" ]]; then
+  [[ -n "$conference_url" ]] || { echo "join requested but EVENT_CONFERENCE_URL is empty" >&2; exit 2; }
+  resolved_action="join"
+  url="$conference_url"
+else
+  resolved_action="calendar"
+  recurrence_id="${instance_id#"${uid}__"}"
+  if [[ "$recurrence_id" == "$instance_id" ]]; then
+    recurrence_id=""
+  fi
+
+  url="rencal://event?uid=$(urlencode "$uid")"
+  if [[ -n "$recurrence_id" ]]; then
+    url+="&recurrence-id=$(urlencode "$recurrence_id")"
+  fi
+fi
+
+if (( print_only )); then
+  printf '%s %s\n' "$resolved_action" "$url"
+  exit 0
+fi
+
+if xdg-open "$url"; then
+  exit 0
+else
+  status=$?
+fi
+
+if [[ "$resolved_action" == "join" ]]; then
+  echo "open-event: conference URL could not be opened: $url" >&2
+else
+  echo "open-event: no application accepted the rencal deeplink; install rencal or configure openScript" >&2
+fi
+exit "$status"

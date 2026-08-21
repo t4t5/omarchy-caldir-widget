@@ -24,8 +24,7 @@
       "calendar": "",
       "showOnlyWithVideoLink": true,
       "maxTitleLength": 28,
-      "browserCommand": "",
-      "calendarUrlBase": "https://calendar.google.com/calendar"
+      "openScript": ""
     },
     "schema": [
       {
@@ -67,17 +66,11 @@
         "defaultValue": 28
       },
       {
-        "key": "browserCommand",
+        "key": "openScript",
         "type": "string",
-        "label": "Browser command",
+        "label": "Event-open script",
         "defaultValue": "",
-        "description": "Optional command used instead of xdg-open."
-      },
-      {
-        "key": "calendarUrlBase",
-        "type": "string",
-        "label": "Google Calendar URL",
-        "defaultValue": "https://calendar.google.com/calendar"
+        "description": "Path to a custom event-open script. Leave blank for the bundled default."
       }
     ]
   }

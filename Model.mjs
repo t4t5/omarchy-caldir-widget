@@ -9,9 +9,9 @@ export {
 } from "./model/dates.mjs"
 
 export {
+  findVideoUrl,
   findMeetUrl,
   unwrapWrappedLinks,
-  meetUrlForAccount,
   normalizedEvent,
   parseAgenda
 } from "./model/events.mjs"
@@ -32,6 +32,5 @@ export {
   hm,
   timeRange,
   daySectionTitle,
-  eventCalendarUrl,
   truncate
 } from "./model/format.mjs"

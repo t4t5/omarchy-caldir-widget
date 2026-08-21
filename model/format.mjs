@@ -135,11 +135,6 @@ export function formatUpdated(value, now) {
   return hours < 24 ? hours + "h ago" : hm(date)
 }
 
-export function eventCalendarUrl(event, base) {
-  const url = String(base || "https://calendar.google.com/calendar").trim().replace(/\/+$/, "")
-  return /\/r$/.test(url) ? url : url + "/r"
-}
-
 export function truncate(value, limit) {
   const string = value === undefined || value === null ? "" : String(value)
   const max = Math.max(1, Number(limit) || 24)

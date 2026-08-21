@@ -2,6 +2,7 @@ set quiet
 
 test:
   npm test
+  bash tests/open-event.test.sh
   /usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell BarWidget.qml
   /usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell Panel.qml
   omarchy plugin validate .
