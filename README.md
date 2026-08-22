@@ -62,6 +62,7 @@ just uninstall
 - Right-click joins the next video meeting; if none exists, it opens the panel.
 - Middle-click runs `caldir pull` and refreshes two seconds later.
 - The refresh button re-reads local caldir data.
+- Up/Down or `j`/`k` selects schedule events; Enter opens the selected event.
 - Escape closes the popup; Tab switches panels.
 
 Failed commands and malformed responses leave the last successful schedule in

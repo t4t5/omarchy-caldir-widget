@@ -22,6 +22,7 @@ Panel {
   property var scheduleGroups: []
   property var next: null
   property date now: hostWidget ? hostWidget.now : new Date()
+  property int selectedEventIndex: -1
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
@@ -54,6 +55,73 @@ Panel {
     heroItem.visible = hostWidget.configured && !!next
     emptyItem.visible = hostWidget.configured && scheduleGroups.length === 0
     scheduleItem.visible = hostWidget.configured && scheduleGroups.length > 0
+    ensureEventSelection()
+  }
+
+  function eventCount() {
+    var count = 0
+    for (var i = 0; i < scheduleGroups.length; i++)
+      count += scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items.length : 0
+    return count
+  }
+
+  function eventOffset(groupIndex) {
+    var offset = 0
+    for (var i = 0; i < groupIndex; i++)
+      offset += scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items.length : 0
+    return offset
+  }
+
+  function ensureEventSelection() {
+    var count = eventCount()
+    if (count === 0) selectedEventIndex = -1
+    else selectedEventIndex = Math.max(0, Math.min(selectedEventIndex, count - 1))
+  }
+
+  function resetEventSelection() {
+    selectedEventIndex = eventCount() > 0 ? 0 : -1
+    if (scroll) scroll.contentY = 0
+  }
+
+  function moveEventSelection(direction) {
+    var count = eventCount()
+    if (count === 0 || direction === 0) return
+    if (selectedEventIndex < 0)
+      selectedEventIndex = direction > 0 ? 0 : count - 1
+    else
+      selectedEventIndex = Math.max(0, Math.min(count - 1, selectedEventIndex + direction))
+  }
+
+  function selectedEvent() {
+    var target = selectedEventIndex
+    if (target < 0) return null
+    for (var i = 0; i < scheduleGroups.length; i++) {
+      var items = scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items : []
+      if (target < items.length) return items[target]
+      target -= items.length
+    }
+    return null
+  }
+
+  function activateSelectedEvent() {
+    var event = selectedEvent()
+    if (event) join(event)
+  }
+
+  function scrollEventIntoView(item) {
+    Qt.callLater(function() {
+      if (!item || !scroll) return
+      var margin = Style.space(6)
+      var point = item.mapToItem(scroll.contentItem, 0, 0)
+      var top = point.y
+      var bottom = top + item.height
+      var viewTop = scroll.contentY
+      var viewBottom = viewTop + scroll.height
+      var maxY = Math.max(0, scroll.contentHeight - scroll.height)
+      if (top < viewTop + margin) scroll.contentY = Math.max(0, top - margin)
+      else if (bottom > viewBottom - margin)
+        scroll.contentY = Math.min(maxY, bottom + margin - scroll.height)
+    })
   }
 
   function join(event) {
@@ -73,7 +141,10 @@ Panel {
   }
 
   onHostWidgetChanged: Qt.callLater(root.reload)
-  onOpenedChanged: if (opened) root.reload()
+  onOpenedChanged: if (opened) {
+    root.reload()
+    root.resetEventSelection()
+  }
 
   Connections {
     target: root.hostWidget
@@ -93,6 +164,10 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      onMoveRequested: function(dx, dy) {
+        if (dy !== 0) root.moveEventSelection(dy)
+      }
+      onActivateRequested: root.activateSelectedEvent()
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
@@ -463,18 +538,19 @@ Panel {
                     Repeater {
                       model: groupItem.group.items
 
-                      Rectangle {
+                      CursorSurface {
                         id: eventRow
                         required property var modelData
+                        required property int index
                         readonly property var meeting: modelData
+                        readonly property int navigationIndex: root.eventOffset(groupItem.index) + index
                         readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
                         readonly property bool cancelledOrDeclined: modelData.cancelled === true || modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
                         width: parent.width
-                        radius: Style.cornerRadius
-                        color: rowMouse.containsMouse
-                          ? Style.hoverFillFor(root.contentForeground, Color.accent)
-                          : "transparent"
+                        hasCursor: navigationIndex === root.selectedEventIndex
+                        foreground: root.contentForeground
+                        accent: Color.accent
                         opacity: ended ? 0.45 : 1.0
                         implicitHeight: Math.max(Style.space(32), eventLayout.implicitHeight + Style.space(8))
 
@@ -483,8 +559,11 @@ Panel {
                           anchors.fill: parent
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
+                          onEntered: root.selectedEventIndex = eventRow.navigationIndex
                           onClicked: root.join(eventRow.meeting)
                         }
+
+                        onHasCursorChanged: if (hasCursor) root.scrollEventIntoView(eventRow)
 
                         RowLayout {
                           id: eventLayout
