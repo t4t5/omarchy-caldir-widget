@@ -57,11 +57,15 @@ Panel {
   }
 
   function join(event) {
-    if (hostWidget && event) hostWidget.openEvent(event)
+    if (!hostWidget || !event) return
+    hostWidget.openEvent(event)
+    root.close()
   }
 
   function openInCalendar(event) {
-    if (hostWidget && event) hostWidget.openCalendar(event)
+    if (!hostWidget || !event) return
+    hostWidget.openCalendar(event)
+    root.close()
   }
 
   function refreshNow() {
