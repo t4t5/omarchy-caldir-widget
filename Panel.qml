@@ -593,24 +593,12 @@ Panel {
                           }
 
                           Text {
-                            visible: !eventRow.meeting.all_day
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: Style.space(34)
-                            horizontalAlignment: Text.AlignRight
-                            text: Model.formatDuration(eventRow.meeting.startMs, eventRow.meeting.endMs)
-                            color: Qt.darker(root.contentForeground, 1.6)
-                            font.family: root.contentFontFamily
-                            font.pixelSize: Style.font.caption
-                          }
-
-                          Text {
+                            visible: !!eventRow.meeting.conferenceUrl
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: Style.space(16)
                             horizontalAlignment: Text.AlignRight
-                            text: eventRow.ended ? "󰄬" : eventRow.meeting.conferenceUrl ? "" : "󰃯"
-                            color: eventRow.ended || !eventRow.meeting.conferenceUrl
-                              ? Qt.darker(root.contentForeground, 1.5)
-                              : Color.accent
+                            text: ""
+                            color: Color.accent
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.bodySmall
                           }
