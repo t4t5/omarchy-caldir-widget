@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Commons
 import qs.Ui
 import "Model.mjs" as Model
 
@@ -42,6 +43,7 @@ BarWidget {
   readonly property string label: nextMeeting
     ? (nextMeeting.conferenceUrl ? "  " : "󰃯  ") + Model.formatLabel(nextMeeting, now, maxTitleLength)
     : ""
+  readonly property bool showingFallbackIcon: label === ""
 
   signal meetingDataChanged()
 
@@ -210,7 +212,12 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
-  readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property real openPanelIndicatorWidth: showingFallbackIcon
+    ? Math.max(
+        fallbackGlyph.tightWidth,
+        Style.space(10),
+        Math.round(Style.bar.iconSlot * 0.55))
+    : button.labelWidth
 
   onBarChanged: injectPanel()
   onSettingsChanged: {
@@ -291,15 +298,29 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.label !== "" ? root.label : "󰃲"
-    labelVisible: true
+    text: root.label
+    labelVisible: !root.showingFallbackIcon
     hasVisualContent: true
     dimmed: root.label === ""
     active: root.inMeeting
     useActiveColor: false
+    fixedWidth: root.showingFallbackIcon && !vertical ? Style.bar.iconSlot : -1
+    fixedHeight: root.showingFallbackIcon && vertical ? Style.bar.iconSlot : -1
     horizontalMargin: 8.75
     verticalPadding: 8.75
     tooltipText: root.tooltipLine
+
+    OpticalGlyph {
+      id: fallbackGlyph
+      anchors.centerIn: parent
+      width: Style.bar.iconCanvas
+      height: Style.bar.iconCanvas
+      visible: root.showingFallbackIcon
+      text: "󰃲"
+      fontFamily: button.fontFamily
+      fontSize: Style.bar.iconFont
+      color: button.foreground
+    }
 
     onPressed: function(mouseButton) {
       if (mouseButton === Qt.RightButton) {
