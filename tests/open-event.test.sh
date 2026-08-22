@@ -10,6 +10,7 @@ mkdir "$temp_dir/bin"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
   'printf '\''%s\n'\'' "$1" >> "$XDG_OPEN_LOG"' \
+  '[[ -z "${XDG_OPEN_BLOCK_SECONDS:-}" ]] || sleep "$XDG_OPEN_BLOCK_SECONDS"' \
   'exit "${XDG_OPEN_EXIT:-0}"' \
   > "$temp_dir/bin/xdg-open"
 chmod +x "$temp_dir/bin/xdg-open"
@@ -92,5 +93,17 @@ fi
 }
 grep -qi 'rencal' "$failed_stderr"
 grep -q 'openScript' "$failed_stderr"
+
+# xdg-open in generic-DE mode blocks until the launched app exits; the handler
+# must detach and return promptly instead of blocking the widget's click
+# process (which would silently drop every subsequent click).
+blocking_log="$temp_dir/blocking.log"
+PATH="$temp_dir/bin:$PATH" XDG_OPEN_LOG="$blocking_log" XDG_OPEN_BLOCK_SECONDS=5 \
+  EVENT_UID="person@example.com" EVENT_INSTANCE_ID="person@example.com" \
+  timeout 2 "$handler" calendar
+[[ "$(wc -l < "$blocking_log")" -eq 1 ]] || {
+  echo "blocking xdg-open was not invoked exactly once" >&2
+  exit 1
+}
 
 printf 'open-event tests passed\n'
