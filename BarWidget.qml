@@ -5,12 +5,12 @@ import qs.Commons
 import qs.Ui
 import "Model.mjs" as Model
 
-// Caldir Quickshell Widget — a local caldir-backed event countdown.
+// Omarchy Caldir Widget — a local caldir-backed event countdown.
 // Left click opens the schedule, right click joins the next meeting, and middle
 // click pulls remote calendars before refreshing the local view.
 BarWidget {
   id: root
-  moduleName: "caldir-quickshell-widget"
+  moduleName: "omarchy-caldir"
 
   readonly property int daysAhead: Math.max(1, Math.min(30, Number(setting("daysAhead", 3)) || 3))
   readonly property int pollSeconds: Math.max(15, Math.min(3600, Number(setting("pollSeconds", 60)) || 60))
@@ -286,7 +286,7 @@ BarWidget {
   }
 
   IpcHandler {
-    target: "caldir-quickshell-widget"
+    target: "omarchy-caldir"
 
     function refresh(): void { root.refresh() }
     function toggle(): void { root.togglePanel() }

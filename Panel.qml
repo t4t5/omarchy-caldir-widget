@@ -5,11 +5,11 @@ import qs.Commons
 import qs.Ui
 import "Model.mjs" as Model
 
-// Caldir Quickshell Widget popup: next-meeting hero followed by a compact multi-day
+// Omarchy Caldir Widget popup: next-meeting hero followed by a compact multi-day
 // schedule. The host owns all data and actions so the panel remains presentational.
 Panel {
   id: root
-  moduleName: "caldir-quickshell-widget"
+  moduleName: "omarchy-caldir"
   manageIpc: false
 
   property var anchorItem: null
@@ -252,7 +252,7 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "Caldir Quickshell Widget reads calendars already configured in caldir. Install caldir, add a calendar, then pull it once:"
+                text: "Omarchy Caldir Widget reads calendars already configured in caldir. Install caldir, add a calendar, then pull it once:"
                 color: Qt.darker(root.contentForeground, 1.35)
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.bodySmall

@@ -15,7 +15,7 @@ install:
 
     repo_dir="$(pwd -P)"
     plugin_dir="$HOME/.config/omarchy/plugins"
-    target="$plugin_dir/caldir-quickshell-widget"
+    target="$plugin_dir/omarchy-caldir"
 
     omarchy plugin validate "$repo_dir"
     mkdir -p "$plugin_dir"
@@ -37,19 +37,19 @@ install:
     omarchy-shell shell rescanPlugins >/dev/null
     discovered=0
     for _ in {1..40}; do
-      if omarchy plugin list --json | jq -e 'any(.[]; .id == "caldir-quickshell-widget")' >/dev/null; then
+      if omarchy plugin list --json | jq -e 'any(.[]; .id == "omarchy-caldir")' >/dev/null; then
         discovered=1
         break
       fi
       sleep 0.05
     done
     if (( ! discovered )); then
-      echo "caldir-quickshell-widget was not discovered by the running shell" >&2
+      echo "omarchy-caldir was not discovered by the running shell" >&2
       exit 1
     fi
 
-    omarchy plugin enable caldir-quickshell-widget --section right
-    echo "Caldir Quickshell Widget is live on the right of the bar."
+    omarchy plugin enable omarchy-caldir --section right
+    echo "Omarchy Caldir Widget is live on the right of the bar."
 
 # Validate source edits and cold-reload the linked development plugin.
 reload:
@@ -58,7 +58,7 @@ reload:
 
     omarchy plugin validate "$(pwd -P)"
     omarchy restart shell
-    echo "Reloaded Caldir Quickshell Widget with a fresh QML cache."
+    echo "Reloaded Omarchy Caldir Widget with a fresh QML cache."
 
 # Disable the widget and remove this checkout's personal-plugin symlink.
 uninstall:
@@ -66,10 +66,10 @@ uninstall:
     set -euo pipefail
 
     repo_dir="$(pwd -P)"
-    target="$HOME/.config/omarchy/plugins/caldir-quickshell-widget"
+    target="$HOME/.config/omarchy/plugins/omarchy-caldir"
 
     if [[ ! -e "$target" && ! -L "$target" ]]; then
-      echo "Caldir Quickshell Widget is not installed."
+      echo "Omarchy Caldir Widget is not installed."
       exit 0
     fi
     if [[ ! -L "$target" ]]; then
@@ -83,9 +83,9 @@ uninstall:
       exit 1
     fi
 
-    if omarchy plugin list --json | jq -e 'any(.[]; .id == "caldir-quickshell-widget")' >/dev/null; then
-      omarchy plugin disable caldir-quickshell-widget
+    if omarchy plugin list --json | jq -e 'any(.[]; .id == "omarchy-caldir")' >/dev/null; then
+      omarchy plugin disable omarchy-caldir
     fi
     unlink -- "$target"
     omarchy-shell shell rescanPlugins >/dev/null
-    echo "Uninstalled Caldir Quickshell Widget. The project checkout was left untouched."
+    echo "Uninstalled Omarchy Caldir Widget. The project checkout was left untouched."

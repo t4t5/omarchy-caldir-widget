@@ -1,5 +1,5 @@
 [Unit]
-Description=Pull remote calendars for Caldir Quickshell Widget
+Description=Pull remote calendars for Omarchy Caldir Widget
 Documentation=https://caldir.org/docs
 After=network-online.target
 Wants=network-online.target

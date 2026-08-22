@@ -1,4 +1,4 @@
-# Caldir Quickshell Widget
+# Omarchy Caldir Widget
 
 An Omarchy Quattro bar widget that shows the next meeting and a live countdown.
 Click it for a next-meeting hero and multi-day schedule, or right-click to join
@@ -156,10 +156,10 @@ EVENT_UID='event@example.com' bin/open-event --print auto
 ### IPC
 
 ```sh
-omarchy shell caldir-quickshell-widget refresh
-omarchy shell caldir-quickshell-widget toggle
-omarchy shell caldir-quickshell-widget open
-omarchy shell caldir-quickshell-widget close
+omarchy shell omarchy-caldir refresh
+omarchy shell omarchy-caldir toggle
+omarchy shell omarchy-caldir open
+omarchy shell omarchy-caldir close
 ```
 
 ## Optional background pull
