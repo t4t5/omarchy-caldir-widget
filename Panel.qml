@@ -17,7 +17,7 @@ Panel {
   readonly property var barIdentity: hostWidget || root
 
   readonly property bool inMeeting: hostWidget ? hostWidget.inMeeting : false
-  readonly property bool fetching: hostWidget ? hostWidget.fetching : false
+  readonly property bool syncing: hostWidget ? hostWidget.syncing : false
   readonly property string loadError: hostWidget ? hostWidget.loadError : ""
   property var scheduleGroups: []
   property var next: null
@@ -59,7 +59,7 @@ Panel {
     if (!hostWidget) return
     scheduleGroups = hostWidget.scheduleGroups || []
     next = hostWidget.nextMeeting || null
-    setupItem.visible = !hostWidget.configured && !hostWidget.fetching && hostWidget.loadError !== ""
+    setupItem.visible = !hostWidget.configured && !hostWidget.syncing && hostWidget.loadError !== ""
     heroItem.visible = hostWidget.configured && !!next
     emptyItem.visible = hostWidget.configured && scheduleGroups.length === 0
     scheduleItem.visible = hostWidget.configured && scheduleGroups.length > 0
@@ -94,8 +94,8 @@ Panel {
     root.close()
   }
 
-  function refreshNow() {
-    if (hostWidget) hostWidget.refresh()
+  function syncNow() {
+    if (hostWidget) hostWidget.pull()
   }
 
   onHostWidgetChanged: Qt.callLater(root.reload)
@@ -148,7 +148,7 @@ Panel {
           Item {
             id: headerRow
             width: parent.width
-            height: Math.max(headingLabel.height, stampLabel.height, refreshButton.height)
+            height: Math.max(headingLabel.height, stampLabel.height, syncButton.height)
             implicitHeight: height
 
             Text {
@@ -165,11 +165,11 @@ Panel {
 
             Text {
               id: stampLabel
-              anchors.right: refreshButton.left
+              anchors.right: syncButton.left
               anchors.rightMargin: Style.space(8)
               anchors.verticalCenter: parent.verticalCenter
               text: {
-                if (root.fetching) return "Updating…"
+                if (root.syncing) return "Syncing…"
                 if (root.loadError !== "") return root.hostWidget && root.hostWidget.configured ? "Update failed · Cached" : "Unavailable"
                 if (root.hostWidget && root.hostWidget.configured)
                   return Model.formatUpdated(root.hostWidget.lastUpdated, root.now)
@@ -181,16 +181,26 @@ Panel {
             }
 
             PanelActionButton {
-              id: refreshButton
+              id: syncButton
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              iconText: ""
-              tooltipText: root.fetching ? "Refreshing calendar…" : "Refresh calendar"
+              iconText: root.syncing ? "" : ""
+              tooltipText: root.syncing ? "Syncing calendar…" : "Sync now"
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
-              enabled: !root.fetching
-              opacity: root.fetching ? 0.6 : 1.0
-              onClicked: root.refreshNow()
+              enabled: !root.syncing
+              opacity: root.syncing ? 0.6 : 1.0
+              onClicked: root.syncNow()
+
+              RotationAnimation on rotation {
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                running: root.syncing
+              }
+
+              onRotationChanged: if (!root.syncing && rotation !== 0) rotation = 0
             }
           }
 

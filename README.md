@@ -60,8 +60,9 @@ just uninstall
 - The hero's Join and Open in Calendar buttons use the same script with an
   explicit action.
 - Right-click joins the next video meeting; if none exists, it opens the panel.
-- Middle-click runs `caldir pull` and refreshes two seconds later.
-- The refresh button re-reads local caldir data.
+- Middle-click runs `caldir pull` and refreshes local data when it finishes.
+- The sync button does the same. Automatic refreshes only re-read local caldir
+  data with `caldir events`.
 - During a meeting, keyboard focus starts on Join Meeting (or Open in Calendar
   when no join link exists). Left/Right or `h`/`l` switches between
   the hero actions, while Up/Down or `j`/`k` moves between the hero and

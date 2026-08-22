@@ -34,7 +34,7 @@ BarWidget {
   property date lastUpdated: new Date(0)
   property date now: new Date()
 
-  readonly property bool fetching: agendaProcess.running
+  readonly property bool syncing: pullProcess.running
   readonly property bool lastFetchFailed: loadError !== ""
   readonly property bool inMeeting: nextMeeting
     && now.getTime() >= Number(nextMeeting.startMs)
@@ -109,9 +109,24 @@ BarWidget {
     meetingDataChanged()
   }
 
-  function manualPull() {
-    if (bar && typeof bar.run === "function") bar.run("caldir pull")
-    pullRefreshTimer.restart()
+  function pull() {
+    if (pullProcess.running) return
+    loadError = ""
+    pullProcess.command = ["caldir", "pull"]
+    pullProcess.running = true
+    meetingDataChanged()
+  }
+
+  function finishPull(exitCode) {
+    if (exitCode !== 0) {
+      var detail = Model.truncate(String(pullStderr.text || "").trim(), 320)
+      loadError = detail !== ""
+        ? "caldir pull failed: " + detail
+        : "Could not pull calendars from caldir."
+      meetingDataChanged()
+      return
+    }
+    refresh()
   }
 
   function eventValue(value) {
@@ -227,6 +242,19 @@ BarWidget {
   }
 
   Process {
+    id: pullProcess
+    running: false
+    stdout: StdioCollector {
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: pullStderr
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishPull(exitCode) }
+  }
+
+  Process {
     id: openProcess
     running: false
     clearEnvironment: false
@@ -236,13 +264,6 @@ BarWidget {
     interval: root.pollSeconds * 1000
     running: true
     repeat: true
-    onTriggered: root.refresh()
-  }
-
-  Timer {
-    id: pullRefreshTimer
-    interval: 2000
-    repeat: false
     onTriggered: root.refresh()
   }
 
@@ -285,7 +306,7 @@ BarWidget {
         if (root.nextMeeting && root.nextMeeting.conferenceUrl) root.joinMeeting(root.nextMeeting)
         else root.togglePanel()
       } else if (mouseButton === Qt.MiddleButton) {
-        root.manualPull()
+        root.pull()
       } else if (mouseButton === Qt.LeftButton) {
         root.togglePanel()
       }
