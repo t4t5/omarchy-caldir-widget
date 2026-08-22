@@ -195,6 +195,7 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+  readonly property real openPanelIndicatorWidth: button.labelWidth
 
   onBarChanged: injectPanel()
   onSettingsChanged: {
