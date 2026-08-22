@@ -22,12 +22,18 @@ Panel {
   property var scheduleGroups: []
   property var next: null
   property date now: hostWidget ? hostWidget.now : new Date()
-  property string focusSection: "events"
-  property int selectedHeroAction: 0
-  property int selectedEventIndex: -1
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
+
+  NavigationController {
+    id: navigation
+    scheduleGroups: root.scheduleGroups
+    nextEvent: root.next
+    inMeeting: root.inMeeting
+    onJoinRequested: function(event) { root.join(event) }
+    onOpenInCalendarRequested: function(event) { root.openInCalendar(event) }
+  }
 
   function open() {
     reload()
@@ -57,121 +63,7 @@ Panel {
     heroItem.visible = hostWidget.configured && !!next
     emptyItem.visible = hostWidget.configured && scheduleGroups.length === 0
     scheduleItem.visible = hostWidget.configured && scheduleGroups.length > 0
-    ensureSelection()
-  }
-
-  function eventCount() {
-    var count = 0
-    for (var i = 0; i < scheduleGroups.length; i++)
-      count += scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items.length : 0
-    return count
-  }
-
-  function eventOffset(groupIndex) {
-    var offset = 0
-    for (var i = 0; i < groupIndex; i++)
-      offset += scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items.length : 0
-    return offset
-  }
-
-  function heroActionAvailable(action) {
-    if (!root.inMeeting || !root.next) return false
-    return action === 0 ? !!root.next.conferenceUrl : action === 1
-  }
-
-  function canFocusHero() {
-    return heroActionAvailable(0) || heroActionAvailable(1)
-  }
-
-  function ensureSelection() {
-    var count = eventCount()
-    if (focusSection === "hero") {
-      if (!canFocusHero()) {
-        focusSection = "events"
-        selectedEventIndex = count > 0 ? 0 : -1
-      } else {
-        selectedEventIndex = -1
-        if (!heroActionAvailable(selectedHeroAction))
-          selectedHeroAction = heroActionAvailable(0) ? 0 : 1
-      }
-      return
-    }
-
-    if (count === 0) selectedEventIndex = -1
-    else selectedEventIndex = Math.max(0, Math.min(selectedEventIndex, count - 1))
-  }
-
-  function resetSelection() {
-    if (canFocusHero()) {
-      focusSection = "hero"
-      selectedHeroAction = heroActionAvailable(0) ? 0 : 1
-      selectedEventIndex = -1
-    } else {
-      focusSection = "events"
-      selectedHeroAction = 0
-      selectedEventIndex = eventCount() > 0 ? 0 : -1
-    }
-    if (scroll) scroll.contentY = 0
-  }
-
-  function moveEventSelection(direction) {
-    var count = eventCount()
-    if (direction === 0) return
-
-    if (focusSection === "hero") {
-      if (direction > 0 && count > 0) {
-        focusSection = "events"
-        selectedEventIndex = 0
-      }
-      return
-    }
-
-    if (count === 0) return
-    if (selectedEventIndex < 0)
-      selectedEventIndex = direction > 0 ? 0 : count - 1
-    else if (direction < 0 && selectedEventIndex === 0 && canFocusHero()) {
-      focusSection = "hero"
-      selectedHeroAction = heroActionAvailable(selectedHeroAction)
-        ? selectedHeroAction
-        : (heroActionAvailable(0) ? 0 : 1)
-      selectedEventIndex = -1
-    }
-    else
-      selectedEventIndex = Math.max(0, Math.min(count - 1, selectedEventIndex + direction))
-  }
-
-  function selectHeroAction(action) {
-    if (!heroActionAvailable(action)) return
-    focusSection = "hero"
-    selectedHeroAction = action
-    selectedEventIndex = -1
-  }
-
-  function moveHeroSelection(direction) {
-    if (focusSection !== "hero" || direction === 0) return
-    if (direction < 0 && heroActionAvailable(0)) selectedHeroAction = 0
-    else if (direction > 0 && heroActionAvailable(1)) selectedHeroAction = 1
-  }
-
-  function selectedEvent() {
-    var target = selectedEventIndex
-    if (target < 0) return null
-    for (var i = 0; i < scheduleGroups.length; i++) {
-      var items = scheduleGroups[i] && scheduleGroups[i].items ? scheduleGroups[i].items : []
-      if (target < items.length) return items[target]
-      target -= items.length
-    }
-    return null
-  }
-
-  function activateSelection() {
-    if (focusSection === "hero") {
-      if (selectedHeroAction === 0 && heroActionAvailable(0)) root.join(root.next)
-      else if (selectedHeroAction === 1 && heroActionAvailable(1)) root.openInCalendar(root.next)
-      return
-    }
-    var event = selectedEvent()
-    if (event) join(event)
+    navigation.ensureSelection()
   }
 
   function scrollItemIntoView(item) {
@@ -209,7 +101,8 @@ Panel {
   onHostWidgetChanged: Qt.callLater(root.reload)
   onOpenedChanged: if (opened) {
     root.reload()
-    root.resetSelection()
+    navigation.resetSelection()
+    if (scroll) scroll.contentY = 0
   }
 
   Connections {
@@ -231,10 +124,10 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       onMoveRequested: function(dx, dy) {
-        if (dx !== 0) root.moveHeroSelection(dx)
-        if (dy !== 0) root.moveEventSelection(dy)
+        if (dx !== 0) navigation.moveHeroSelection(dx)
+        if (dy !== 0) navigation.moveEventSelection(dy)
       }
-      onActivateRequested: root.activateSelection()
+      onActivateRequested: navigation.activateSelection()
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
@@ -489,8 +382,8 @@ Panel {
 
                   Button {
                     id: joinButton
-                    readonly property bool keyboardFocused: root.focusSection === "hero"
-                      && root.selectedHeroAction === 0
+                    readonly property bool keyboardFocused: navigation.focusSection === "hero"
+                      && navigation.selectedHeroAction === 0
                     visible: !!(root.next && root.next.conferenceUrl)
                     Layout.fillWidth: true
                     text: "Join Meeting"
@@ -503,7 +396,7 @@ Panel {
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
                     onHovered: function(isHovered) {
-                      if (isHovered) root.selectHeroAction(0)
+                      if (isHovered) navigation.selectHeroAction(0)
                     }
                     onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.join(root.next)
@@ -519,8 +412,8 @@ Panel {
 
                   Button {
                     id: calendarButton
-                    readonly property bool keyboardFocused: root.focusSection === "hero"
-                      && root.selectedHeroAction === 1
+                    readonly property bool keyboardFocused: navigation.focusSection === "hero"
+                      && navigation.selectedHeroAction === 1
                     visible: !!root.next
                     Layout.fillWidth: true
                     text: "Open in Calendar"
@@ -533,7 +426,7 @@ Panel {
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
                     onHovered: function(isHovered) {
-                      if (isHovered) root.selectHeroAction(1)
+                      if (isHovered) navigation.selectHeroAction(1)
                     }
                     onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.openInCalendar(root.next)
@@ -640,12 +533,12 @@ Panel {
                         required property var modelData
                         required property int index
                         readonly property var meeting: modelData
-                        readonly property int navigationIndex: root.eventOffset(groupItem.index) + index
+                        readonly property int navigationIndex: navigation.eventOffset(groupItem.index) + index
                         readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
                         readonly property bool cancelledOrDeclined: modelData.cancelled === true || modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
                         width: parent.width
-                        hasCursor: navigationIndex === root.selectedEventIndex
+                        hasCursor: navigationIndex === navigation.selectedEventIndex
                         foreground: root.contentForeground
                         accent: Color.accent
                         opacity: ended ? 0.45 : 1.0
@@ -657,8 +550,8 @@ Panel {
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
                           onEntered: {
-                            root.focusSection = "events"
-                            root.selectedEventIndex = eventRow.navigationIndex
+                            navigation.focusSection = "events"
+                            navigation.selectedEventIndex = eventRow.navigationIndex
                           }
                           onClicked: root.join(eventRow.meeting)
                         }
