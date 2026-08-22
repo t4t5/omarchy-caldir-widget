@@ -69,7 +69,7 @@ export function buildUpcoming(events, now, options) {
     if (event.endMs < current || event.startMs > horizon) continue
     if (config.excludeAllDay === true && event.all_day === true) continue
     if (config.excludeTentative === true && event.tentative === true) continue
-    if (showOnlyWithVideoLink && !event.meetUrl) continue
+    if (showOnlyWithVideoLink && !event.conferenceUrl) continue
     upcoming.push(event)
   }
 

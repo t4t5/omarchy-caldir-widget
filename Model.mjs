@@ -11,7 +11,11 @@ export {
 export {
   findVideoUrl,
   findMeetUrl,
-  unwrapWrappedLinks,
+  getConferenceUrl,
+  unwrapWrappedLinks
+} from "./model/conference.mjs"
+
+export {
   normalizedEvent,
   parseAgenda
 } from "./model/events.mjs"

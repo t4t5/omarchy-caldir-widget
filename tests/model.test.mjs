@@ -57,19 +57,65 @@ test("parseAgenda rejects malformed and non-array output", () => {
   assert.throws(() => Model.parseAgenda('{"events":[]}'), /JSON array/)
 })
 
-test("findVideoUrl scans both location and description", () => {
+test("normalized events expose one conference URL", () => {
   const zoomUrl = "https://us02web.zoom.us/j/123456789?pwd=unchanged"
   const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-19T11:00:00+01:00", { location: "Room · https://meet.google.com/abc-defg-hij" }),
+    event("2026-08-19T11:00:00+01:00", {
+      location: "Room · https://meet.google.com/abc-defg-hij",
+      meetUrl: "legacy-meet-url",
+      videoUrl: "legacy-video-url"
+    }),
     event("2026-08-19T12:00:00+01:00", { description: "Join HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg." }),
     event("2026-08-19T13:00:00+01:00", { location: zoomUrl })
   ]))
-  assert.equal(parsed[0].meetUrl, "https://meet.google.com/abc-defg-hij")
-  assert.equal(parsed[0].videoUrl, "https://meet.google.com/abc-defg-hij")
-  assert.equal(parsed[1].meetUrl, "HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg")
-  assert.equal(parsed[2].videoUrl, zoomUrl)
-  assert.equal(parsed[2].meetUrl, zoomUrl)
+  assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/abc-defg-hij")
+  assert.equal(parsed[1].conferenceUrl, "HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg")
+  assert.equal(parsed[2].conferenceUrl, zoomUrl)
+  assert.equal("meetUrl" in parsed[0], false)
+  assert.equal("videoUrl" in parsed[0], false)
   assert.equal(Model.findVideoUrl("not a call"), "")
+})
+
+test("provider conference properties outrank URL and free-form fields", () => {
+  const googleUrl = "https://meet.google.com/structured-link"
+  const raw = event("2026-08-19T11:00:00+01:00", {
+    url: "https://meet.google.com/url-field",
+    location: "https://meet.google.com/location-field",
+    description: "https://meet.google.com/description-field",
+    x_properties: [
+      { name: "X-OUTLOOK-CONFERENCE", value: "https://teams.live.com/meet/9425716001426?p=outlook" },
+      { name: "x-google-conference", value: `  ${googleUrl}  ` }
+    ]
+  })
+
+  assert.equal(Model.getConferenceUrl(raw), googleUrl)
+  assert.equal(Model.normalizedEvent(raw).conferenceUrl, googleUrl)
+})
+
+test("an unprovisioned conference request does not fall back to URL", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", {
+      url: "https://meet.google.com/stale-url",
+      x_properties: [
+        { name: "X-GOOGLE-CONFERENCE", value: " \t " }
+      ]
+    })
+  ]))
+
+  assert.equal(parsed[0].conferenceUrl, "")
+})
+
+test("URL outranks free-form fields when no conference property exists", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", {
+      url: "https://meet.google.com/url-field",
+      location: "https://meet.google.com/location-field",
+      description: "https://meet.google.com/description-field",
+      x_properties: [{ name: "X-UNRELATED", value: "https://meet.google.com/unrelated" }]
+    })
+  ]))
+
+  assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/url-field")
 })
 
 test("findVideoUrl detects the supported video providers", () => {
@@ -81,7 +127,8 @@ test("findVideoUrl detects the supported video providers", () => {
     ["Microsoft Teams short link", "https://teams.live.com/meet/9425716001426?p=0SystrMw2goKHi8LK6"],
     ["Cisco Webex", "https://example.webex.com/meet/alice.smith?token=abc"],
     ["Jitsi", "https://meet.jit.si/team-standup#config.prejoinPageEnabled=false"],
-    ["Whereby", "https://whereby.com/team-room?roomKey=abc"]
+    ["Whereby", "https://whereby.com/team-room?roomKey=abc"],
+    ["Proton Meet", "https://meet.proton.me/team-room#key"]
   ]
 
   for (const [provider, url] of cases) {
@@ -118,7 +165,7 @@ test("location outranks description and the longest match wins per source", () =
       description: "https://meet.google.com/abc-defg-hij"
     })
   ]))
-  assert.equal(parsed[0].meetUrl, "https://meet.google.com/abc")
+  assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/abc")
 
   const both = "https://meet.google.com/abc then https://meet.google.com/abc-defg-hij"
   assert.equal(Model.findMeetUrl(both), "https://meet.google.com/abc-defg-hij")

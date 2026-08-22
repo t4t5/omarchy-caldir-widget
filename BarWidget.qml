@@ -40,7 +40,7 @@ BarWidget {
     && now.getTime() >= Number(nextMeeting.startMs)
     && now.getTime() < Number(nextMeeting.endMs)
   readonly property string label: nextMeeting
-    ? (nextMeeting.meetUrl ? "  " : "󰃯  ") + Model.formatLabel(nextMeeting, now, maxTitleLength)
+    ? (nextMeeting.conferenceUrl ? "  " : "󰃯  ") + Model.formatLabel(nextMeeting, now, maxTitleLength)
     : ""
 
   signal meetingDataChanged()
@@ -139,7 +139,7 @@ BarWidget {
       "EVENT_DESCRIPTION": eventValue(event.description),
       "EVENT_STATUS": eventValue(event.status).toLowerCase(),
       "EVENT_RSVP": eventValue(event.rsvp).toLowerCase(),
-      "EVENT_CONFERENCE_URL": eventValue(event.meetUrl)
+      "EVENT_CONFERENCE_URL": eventValue(event.conferenceUrl)
     }
   }
 
@@ -151,7 +151,7 @@ BarWidget {
   }
 
   function joinMeeting(event) {
-    if (event && event.meetUrl) runHandler(event, "join")
+    if (event && event.conferenceUrl) runHandler(event, "join")
   }
 
   function openCalendar(event) {
@@ -281,7 +281,7 @@ BarWidget {
 
     onPressed: function(mouseButton) {
       if (mouseButton === Qt.RightButton) {
-        if (root.nextMeeting && root.nextMeeting.meetUrl) root.joinMeeting(root.nextMeeting)
+        if (root.nextMeeting && root.nextMeeting.conferenceUrl) root.joinMeeting(root.nextMeeting)
         else root.togglePanel()
       } else if (mouseButton === Qt.MiddleButton) {
         root.manualPull()

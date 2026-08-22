@@ -79,9 +79,11 @@ The bar meeting follows MeetingBar's selection rules: a meeting with under a
 minute left is never shown, and a meeting in progress hands the bar to the
 following one once it starts within ten minutes, so back-to-back calls show
 the meeting you need to join next. Google Meet, Zoom, Microsoft Teams, Webex,
-Jitsi, and Whereby links are detected. Links wrapped in Outlook SafeLinks or
-Google `google.com/url?q=` redirects are unwrapped before detection, and the
-link found in the event location wins over one in the description.
+Jitsi, Whereby, and Proton Meet links are detected. Links wrapped in Outlook
+SafeLinks or Google `google.com/url?q=` redirects are unwrapped before
+detection. The provider-owned `X-GOOGLE-CONFERENCE`, `X-OUTLOOK-CONFERENCE`,
+and `X-PM-CONFERENCE-URL` properties take priority. Without one of those, the
+widget checks the event URL, location, then description.
 
 ### Settings
 

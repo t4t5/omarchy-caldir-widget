@@ -374,7 +374,7 @@ Panel {
                       var parts = []
                       var duration = root.next ? Model.formatDuration(root.next.startMs, root.next.endMs) : ""
                       if (duration) parts.push(duration)
-                      if (root.next) parts.push(root.next.meetUrl ? "  Meet" : "󰃯  Event")
+                      if (root.next) parts.push(root.next.conferenceUrl ? "  Meet" : "󰃯  Event")
                       return parts.join("  ·  ")
                     }
                     color: root.inMeeting ? Color.accent : Qt.darker(root.contentForeground, 1.4)
@@ -407,7 +407,7 @@ Panel {
                 }
 
                 Text {
-                  visible: !!(root.next && root.next.location && !root.next.meetUrl)
+                  visible: !!(root.next && root.next.location && !root.next.conferenceUrl)
                   width: parent.width
                   text: root.next ? root.next.location : ""
                   color: Qt.darker(root.contentForeground, 1.45)
@@ -421,7 +421,7 @@ Panel {
                   spacing: Style.space(8)
 
                   Button {
-                    visible: !!(root.next && root.next.meetUrl)
+                    visible: !!(root.next && root.next.conferenceUrl)
                     Layout.fillWidth: true
                     text: "Join Meeting"
                     iconText: ""
@@ -614,8 +614,8 @@ Panel {
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: Style.space(16)
                             horizontalAlignment: Text.AlignRight
-                            text: eventRow.ended ? "󰄬" : eventRow.meeting.meetUrl ? "" : "󰃯"
-                            color: eventRow.ended || !eventRow.meeting.meetUrl
+                            text: eventRow.ended ? "󰄬" : eventRow.meeting.conferenceUrl ? "" : "󰃯"
+                            color: eventRow.ended || !eventRow.meeting.conferenceUrl
                               ? Qt.darker(root.contentForeground, 1.5)
                               : Color.accent
                             font.family: root.contentFontFamily
