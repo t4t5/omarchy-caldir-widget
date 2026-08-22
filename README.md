@@ -62,7 +62,10 @@ just uninstall
 - Right-click joins the next video meeting; if none exists, it opens the panel.
 - Middle-click runs `caldir pull` and refreshes two seconds later.
 - The refresh button re-reads local caldir data.
-- Up/Down or `j`/`k` selects schedule events; Enter opens the selected event.
+- During a meeting, keyboard focus starts on Join Meeting (or Open in Calendar
+  when no join link exists). Left/Right or `h`/`l` switches between
+  the hero actions, while Up/Down or `j`/`k` moves between the hero and
+  schedule events. Enter activates the focused action.
 - Escape closes the popup; Tab switches panels.
 
 Failed commands and malformed responses leave the last successful schedule in

@@ -22,6 +22,8 @@ Panel {
   property var scheduleGroups: []
   property var next: null
   property date now: hostWidget ? hostWidget.now : new Date()
+  property string focusSection: "events"
+  property int selectedHeroAction: 0
   property int selectedEventIndex: -1
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
@@ -55,7 +57,7 @@ Panel {
     heroItem.visible = hostWidget.configured && !!next
     emptyItem.visible = hostWidget.configured && scheduleGroups.length === 0
     scheduleItem.visible = hostWidget.configured && scheduleGroups.length > 0
-    ensureEventSelection()
+    ensureSelection()
   }
 
   function eventCount() {
@@ -72,24 +74,83 @@ Panel {
     return offset
   }
 
-  function ensureEventSelection() {
+  function heroActionAvailable(action) {
+    if (!root.inMeeting || !root.next) return false
+    return action === 0 ? !!root.next.conferenceUrl : action === 1
+  }
+
+  function canFocusHero() {
+    return heroActionAvailable(0) || heroActionAvailable(1)
+  }
+
+  function ensureSelection() {
     var count = eventCount()
+    if (focusSection === "hero") {
+      if (!canFocusHero()) {
+        focusSection = "events"
+        selectedEventIndex = count > 0 ? 0 : -1
+      } else {
+        selectedEventIndex = -1
+        if (!heroActionAvailable(selectedHeroAction))
+          selectedHeroAction = heroActionAvailable(0) ? 0 : 1
+      }
+      return
+    }
+
     if (count === 0) selectedEventIndex = -1
     else selectedEventIndex = Math.max(0, Math.min(selectedEventIndex, count - 1))
   }
 
-  function resetEventSelection() {
-    selectedEventIndex = eventCount() > 0 ? 0 : -1
+  function resetSelection() {
+    if (canFocusHero()) {
+      focusSection = "hero"
+      selectedHeroAction = heroActionAvailable(0) ? 0 : 1
+      selectedEventIndex = -1
+    } else {
+      focusSection = "events"
+      selectedHeroAction = 0
+      selectedEventIndex = eventCount() > 0 ? 0 : -1
+    }
     if (scroll) scroll.contentY = 0
   }
 
   function moveEventSelection(direction) {
     var count = eventCount()
-    if (count === 0 || direction === 0) return
+    if (direction === 0) return
+
+    if (focusSection === "hero") {
+      if (direction > 0 && count > 0) {
+        focusSection = "events"
+        selectedEventIndex = 0
+      }
+      return
+    }
+
+    if (count === 0) return
     if (selectedEventIndex < 0)
       selectedEventIndex = direction > 0 ? 0 : count - 1
+    else if (direction < 0 && selectedEventIndex === 0 && canFocusHero()) {
+      focusSection = "hero"
+      selectedHeroAction = heroActionAvailable(selectedHeroAction)
+        ? selectedHeroAction
+        : (heroActionAvailable(0) ? 0 : 1)
+      selectedEventIndex = -1
+    }
     else
       selectedEventIndex = Math.max(0, Math.min(count - 1, selectedEventIndex + direction))
+  }
+
+  function selectHeroAction(action) {
+    if (!heroActionAvailable(action)) return
+    focusSection = "hero"
+    selectedHeroAction = action
+    selectedEventIndex = -1
+  }
+
+  function moveHeroSelection(direction) {
+    if (focusSection !== "hero" || direction === 0) return
+    if (direction < 0 && heroActionAvailable(0)) selectedHeroAction = 0
+    else if (direction > 0 && heroActionAvailable(1)) selectedHeroAction = 1
   }
 
   function selectedEvent() {
@@ -103,12 +164,17 @@ Panel {
     return null
   }
 
-  function activateSelectedEvent() {
+  function activateSelection() {
+    if (focusSection === "hero") {
+      if (selectedHeroAction === 0 && heroActionAvailable(0)) root.join(root.next)
+      else if (selectedHeroAction === 1 && heroActionAvailable(1)) root.openInCalendar(root.next)
+      return
+    }
     var event = selectedEvent()
     if (event) join(event)
   }
 
-  function scrollEventIntoView(item) {
+  function scrollItemIntoView(item) {
     Qt.callLater(function() {
       if (!item || !scroll) return
       var margin = Style.space(6)
@@ -143,7 +209,7 @@ Panel {
   onHostWidgetChanged: Qt.callLater(root.reload)
   onOpenedChanged: if (opened) {
     root.reload()
-    root.resetEventSelection()
+    root.resetSelection()
   }
 
   Connections {
@@ -165,9 +231,10 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       onMoveRequested: function(dx, dy) {
+        if (dx !== 0) root.moveHeroSelection(dx)
         if (dy !== 0) root.moveEventSelection(dy)
       }
-      onActivateRequested: root.activateSelectedEvent()
+      onActivateRequested: root.activateSelection()
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
@@ -421,6 +488,9 @@ Panel {
                   spacing: Style.space(8)
 
                   Button {
+                    id: joinButton
+                    readonly property bool keyboardFocused: root.focusSection === "hero"
+                      && root.selectedHeroAction === 0
                     visible: !!(root.next && root.next.conferenceUrl)
                     Layout.fillWidth: true
                     text: "Join Meeting"
@@ -432,10 +502,25 @@ Panel {
                     iconSize: Style.font.bodySmall
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
+                    onHovered: function(isHovered) {
+                      if (isHovered) root.selectHeroAction(0)
+                    }
+                    onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.join(root.next)
+
+                    BorderOverlay {
+                      opacity: joinButton.keyboardFocused ? 1 : 0
+                      radius: joinButton.radius
+                      borderSpec: Border.withWidth(
+                        Border.controlSpec("focus", root.contentForeground, Color.accent),
+                        Math.max(2, Style.focusBorderWidth))
+                    }
                   }
 
                   Button {
+                    id: calendarButton
+                    readonly property bool keyboardFocused: root.focusSection === "hero"
+                      && root.selectedHeroAction === 1
                     visible: !!root.next
                     Layout.fillWidth: true
                     text: "Open in Calendar"
@@ -447,7 +532,19 @@ Panel {
                     iconSize: Style.font.bodySmall
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
+                    onHovered: function(isHovered) {
+                      if (isHovered) root.selectHeroAction(1)
+                    }
+                    onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.openInCalendar(root.next)
+
+                    BorderOverlay {
+                      opacity: calendarButton.keyboardFocused ? 1 : 0
+                      radius: calendarButton.radius
+                      borderSpec: Border.withWidth(
+                        Border.controlSpec("focus", root.contentForeground, Color.accent),
+                        Math.max(2, Style.focusBorderWidth))
+                    }
                   }
                 }
               }
@@ -559,11 +656,14 @@ Panel {
                           anchors.fill: parent
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
-                          onEntered: root.selectedEventIndex = eventRow.navigationIndex
+                          onEntered: {
+                            root.focusSection = "events"
+                            root.selectedEventIndex = eventRow.navigationIndex
+                          }
                           onClicked: root.join(eventRow.meeting)
                         }
 
-                        onHasCursorChanged: if (hasCursor) root.scrollEventIntoView(eventRow)
+                        onHasCursorChanged: if (eventRow.hasCursor) root.scrollItemIntoView(eventRow)
 
                         RowLayout {
                           id: eventLayout
