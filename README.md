@@ -146,10 +146,10 @@ EVENT_UID='event@example.com' bin/open-event --print auto
 ### IPC
 
 ```sh
-omarchy shell omarchy-caldir refresh
-omarchy shell omarchy-caldir toggle
-omarchy shell omarchy-caldir open
-omarchy shell omarchy-caldir close
+omarchy shell t4t5.caldir refresh
+omarchy shell t4t5.caldir toggle
+omarchy shell t4t5.caldir open
+omarchy shell t4t5.caldir close
 ```
 
 ## Optional background pull

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-target="$HOME/.config/omarchy/plugins/omarchy-caldir"
+plugin_id="t4t5.caldir"
+target="$HOME/.config/omarchy/plugins/$plugin_id"
 
 if [[ ! -e "$target" && ! -L "$target" ]]; then
   echo "Omarchy Caldir Widget is not installed."
@@ -19,8 +20,8 @@ if [[ "$linked_dir" != "$repo_dir" ]]; then
   exit 1
 fi
 
-if omarchy plugin list --json | jq -e 'any(.[]; .id == "omarchy-caldir")' >/dev/null; then
-  omarchy plugin disable omarchy-caldir
+if omarchy plugin list --json | jq -e --arg id "$plugin_id" 'any(.[]; .id == $id)' >/dev/null; then
+  omarchy plugin disable "$plugin_id"
 fi
 unlink -- "$target"
 omarchy-shell shell rescanPlugins >/dev/null
