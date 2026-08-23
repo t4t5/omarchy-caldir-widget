@@ -674,11 +674,23 @@ Panel {
                       strength: 0.1
                     }
 
-                    PanelSectionHeader {
-                      text: groupItem.group.title
-                      foreground: root.contentForeground
-                      fontFamily: root.contentFontFamily
-                      leftPadding: Style.space(4)
+                    RowLayout {
+                      spacing: Style.space(6)
+
+                      PanelSectionHeader {
+                        text: groupItem.group.title
+                        foreground: root.contentForeground
+                        fontFamily: root.contentFontFamily
+                        leftPadding: Style.space(4)
+                      }
+
+                      PanelSectionHeader {
+                        visible: groupItem.group.dateTitle !== groupItem.group.title
+                        text: groupItem.group.dateTitle || ""
+                        foreground: root.contentForeground
+                        fontFamily: root.contentFontFamily
+                        opacity: 0.55
+                      }
                     }
 
                     Repeater {

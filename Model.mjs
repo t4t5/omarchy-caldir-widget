@@ -34,6 +34,7 @@ export {
   hm,
   timeRange,
   daySectionTitle,
+  daySectionDate,
   truncate
 } from "./model/format.mjs"
 

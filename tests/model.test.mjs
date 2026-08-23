@@ -323,6 +323,7 @@ test("schedule grouping uses today, tomorrow, and dated headings", () => {
   ]))
   const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
   assert.deepEqual(groups.map(group => group.title), ["TODAY", "TOMORROW", "FRI 21 AUG"])
+  assert.deepEqual(groups.map(group => group.dateTitle), ["WED 19 AUG", "THU 20 AUG", "FRI 21 AUG"])
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
 })
 

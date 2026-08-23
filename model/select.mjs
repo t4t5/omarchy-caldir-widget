@@ -1,5 +1,5 @@
 import { DAY_MS, MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
-import { daySectionTitle } from "./format.mjs"
+import { daySectionDate, daySectionTitle } from "./format.mjs"
 
 function nowMillis(now) {
   return now instanceof Date ? now.getTime() : Number(now)
@@ -135,7 +135,12 @@ export function buildScheduleGroups(events, now, options) {
       const date = days[j]
       const key = localDateKey(date)
       if (!byKey[key]) {
-        byKey[key] = { key: key, title: daySectionTitle(date.getTime(), now), items: [] }
+        byKey[key] = {
+          key: key,
+          title: daySectionTitle(date.getTime(), now),
+          dateTitle: daySectionDate(date.getTime()),
+          items: []
+        }
       }
       byKey[key].items.push(event)
     }

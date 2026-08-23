@@ -16,6 +16,10 @@ function sameDay(a, b) {
   return localDateKey(a) === localDateKey(b)
 }
 
+function fullDayLabel(date) {
+  return WEEKDAYS[date.getDay()] + " " + date.getDate() + " " + MONTHS[date.getMonth()]
+}
+
 export function hm(value) {
   const date = dateOf(value)
   if (isNaN(date.getTime())) return ""
@@ -36,7 +40,7 @@ export function meetingTimeLabel(start, end, now) {
   const labels = []
   if (sameDay(startDate, nowDate)) labels.push("Today")
   else if (sameDay(startDate, addLocalDays(nowDate, 1))) labels.push("Tomorrow")
-  else labels.push(WEEKDAYS[startDate.getDay()] + " " + startDate.getDate() + " " + MONTHS[startDate.getMonth()])
+  else labels.push(fullDayLabel(startDate))
   const range = timeRange(start, end)
   if (range) labels.push(range)
   return labels.join(" · ")
@@ -73,7 +77,7 @@ function dayLabel(value, now) {
   if (key === localDateKey(addLocalDays(current, -1))) return "Yest"
   const distance = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(current.getFullYear(), current.getMonth(), current.getDate())) / 86400000)
   if (distance > 1 && distance < 7) return WEEKDAYS[date.getDay()]
-  return WEEKDAYS[date.getDay()] + " " + date.getDate() + " " + MONTHS[date.getMonth()]
+  return fullDayLabel(date)
 }
 
 export function formatLabel(event, now, maxTitleLength) {
@@ -121,7 +125,11 @@ export function daySectionTitle(value, now) {
   const key = localDateKey(date)
   if (key === localDateKey(current)) return "TODAY"
   if (key === localDateKey(addLocalDays(current, 1))) return "TOMORROW"
-  return WEEKDAYS[date.getDay()].toUpperCase() + " " + date.getDate() + " " + MONTHS[date.getMonth()].toUpperCase()
+  return daySectionDate(value)
+}
+
+export function daySectionDate(value) {
+  return fullDayLabel(dateOf(value)).toUpperCase()
 }
 
 export function truncate(value, limit) {
