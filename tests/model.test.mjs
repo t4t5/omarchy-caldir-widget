@@ -244,15 +244,15 @@ test("an event ending inside the one-minute grace window is never next", () => {
       end: "2026-08-19T10:00:30+01:00",
       description: "https://meet.google.com/aaa-bbbb-ccc"
     }),
-    event("2026-08-19T14:00:00+01:00", {
-      title: "Afternoon",
+    event("2026-08-19T10:25:00+01:00", {
+      title: "Upcoming",
       description: "https://meet.google.com/ddd-eeee-fff"
     })
   ]))
-  assert.equal(Model.nextMeeting(parsed, NOW).title, "Afternoon")
+  assert.equal(Model.nextMeeting(parsed, NOW).title, "Upcoming")
 })
 
-test("nextMeeting keeps meetings from the final queried day", () => {
+test("nextMeeting ignores meetings more than 30 minutes away", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-22T15:00:00+01:00", {
       title: "Final day",
@@ -260,22 +260,33 @@ test("nextMeeting keeps meetings from the final queried day", () => {
     })
   ]))
 
-  assert.equal(Model.nextMeeting(parsed, NOW).title, "Final day")
+  assert.equal(Model.nextMeeting(parsed, NOW), null)
+})
+
+test("nextMeeting includes a meeting starting exactly 30 minutes away", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:30:00+01:00", {
+      title: "On the boundary",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW).title, "On the boundary")
 })
 
 test("tentative invitations stay off the bar but keep their schedule slot", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-19T10:30:00+01:00", {
+    event("2026-08-19T10:10:00+01:00", {
       title: "Maybe",
       rsvp: "Tentative",
       description: "https://meet.google.com/aaa-bbbb-ccc"
     }),
-    event("2026-08-19T11:00:00+01:00", {
+    event("2026-08-19T10:20:00+01:00", {
       title: "Sure",
       rsvp: "needs-action",
       description: "https://meet.google.com/ddd-eeee-fff"
     }),
-    event("2026-08-19T12:00:00+01:00", {
+    event("2026-08-19T10:25:00+01:00", {
       title: "Confirmed",
       description: "https://meet.google.com/ggg-hhhh-iii"
     })
@@ -291,12 +302,12 @@ test("tentative invitations stay off the bar but keep their schedule slot", () =
 
 test("declined events stay off the bar but keep their schedule slots", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-19T11:00:00+01:00", {
+    event("2026-08-19T10:10:00+01:00", {
       title: "Declined",
       rsvp: "declined",
       description: "https://meet.google.com/ddd-eeee-fff"
     }),
-    event("2026-08-19T12:00:00+01:00", {
+    event("2026-08-19T10:20:00+01:00", {
       title: "Confirmed",
       description: "https://meet.google.com/ggg-hhhh-iii"
     })

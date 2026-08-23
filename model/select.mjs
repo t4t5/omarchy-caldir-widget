@@ -61,12 +61,14 @@ function buildUpcoming(events, current) {
 }
 
 // Ported from MeetingBar's EventSelection: an event with under a minute left
-// is never "next" (grace window), tentative invitations and events without a
-// video link stay off the bar, and a running meeting hands the bar to the
-// following one once it starts within ten minutes. Unlike MeetingBar, the
-// handover only replaces a pick that is already in progress, so of two future
-// meetings the earlier one always wins.
+// is never "next" (grace window), future meetings only appear during the 30
+// minutes before they start, tentative invitations and events without a video
+// link stay off the bar, and a running meeting hands the bar to the following
+// one once it starts within ten minutes. Unlike MeetingBar, the handover only
+// replaces a pick that is already in progress, so of two future meetings the
+// earlier one always wins.
 const NEXT_GRACE_MS = MINUTE_MS
+const NEXT_LOOKAHEAD_MS = 30 * MINUTE_MS
 const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
 export function nextMeeting(events, now) {
@@ -76,6 +78,7 @@ export function nextMeeting(events, now) {
   let result = null
   for (let i = 0; i < candidates.length; i++) {
     const event = candidates[i]
+    if (event.startMs > current + NEXT_LOOKAHEAD_MS) break
     if (event.endMs <= current + NEXT_GRACE_MS) continue
     if (!result) {
       result = event
