@@ -3,11 +3,6 @@ import { addLocalDays, localDateKey, MINUTE_MS } from "./dates.mjs"
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-function dateOf(value) {
-  if (value instanceof Date) return value
-  return new Date(Number(value))
-}
-
 function pad2(value) {
   return (value < 10 ? "0" : "") + value
 }
@@ -21,7 +16,7 @@ function fullDayLabel(date) {
 }
 
 export function hm(value) {
-  const date = dateOf(value)
+  const date = new Date(value)
   if (isNaN(date.getTime())) return ""
   return pad2(date.getHours()) + ":" + pad2(date.getMinutes())
 }
@@ -34,8 +29,8 @@ export function timeRange(start, end) {
 }
 
 export function meetingTimeLabel(start, end, now) {
-  const startDate = dateOf(start)
-  const nowDate = dateOf(now)
+  const startDate = new Date(start)
+  const nowDate = now
   if (isNaN(startDate.getTime()) || isNaN(nowDate.getTime())) return ""
   const labels = []
   if (sameDay(startDate, nowDate)) labels.push("Today")
@@ -56,9 +51,9 @@ function timeLeftLabel(end, current) {
 
 export function relativeStatus(event, now) {
   if (!event) return ""
-  const start = Number(event.startMs)
-  const end = Number(event.endMs)
-  const current = dateOf(now).getTime()
+  const start = event.startMs
+  const end = event.endMs
+  const current = now.getTime()
   if (!isFinite(start) || !isFinite(end) || isNaN(current)) return ""
 
   if (current < start) {
@@ -70,8 +65,8 @@ export function relativeStatus(event, now) {
 }
 
 function dayLabel(value, now) {
-  const date = dateOf(value)
-  const current = dateOf(now)
+  const date = new Date(value)
+  const current = now
   const key = localDateKey(date)
   if (key === localDateKey(current)) return "Today"
   if (key === localDateKey(addLocalDays(current, 1))) return "Tmrw"
@@ -82,12 +77,12 @@ function dayLabel(value, now) {
 }
 
 export function formatLabel(event, now, maxTitleLength) {
-  if (!event || !isFinite(Number(event.startMs))) return ""
+  if (!event || !isFinite(event.startMs)) return ""
   let title = String(event.title || "(Untitled)")
   const limit = Math.max(8, parseInt(maxTitleLength, 10) || 28)
-  const start = Number(event.startMs)
-  const end = isFinite(Number(event.endMs)) ? Number(event.endMs) : start
-  const current = dateOf(now).getTime()
+  const start = event.startMs
+  const end = isFinite(event.endMs) ? event.endMs : start
+  const current = now.getTime()
   let suffix = ""
 
   if (current >= start && current < end) {
@@ -96,7 +91,7 @@ export function formatLabel(event, now, maxTitleLength) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     suffix = " · in " + minutes + " min"
   } else {
-    suffix = " · " + (sameDay(new Date(start), dateOf(now)) ? hm(start) : dayLabel(start, now) + " " + hm(start))
+    suffix = " · " + (sameDay(new Date(start), now) ? hm(start) : dayLabel(start, now) + " " + hm(start))
   }
 
   const titleLimit = Math.max(3, limit - suffix.length)
@@ -105,7 +100,7 @@ export function formatLabel(event, now, maxTitleLength) {
 }
 
 export function formatDuration(start, end) {
-  const minutes = Math.round((dateOf(end).getTime() - dateOf(start).getTime()) / MINUTE_MS)
+  const minutes = Math.round((end - start) / MINUTE_MS)
   if (!isFinite(minutes) || minutes <= 0) return ""
   if (minutes < 60) return minutes + "m"
   const hours = Math.floor(minutes / 60)
@@ -114,8 +109,8 @@ export function formatDuration(start, end) {
 }
 
 export function daySectionTitle(value, now) {
-  const date = dateOf(value)
-  const current = dateOf(now)
+  const date = new Date(value)
+  const current = now
   const key = localDateKey(date)
   if (key === localDateKey(current)) return "TODAY"
   if (key === localDateKey(addLocalDays(current, 1))) return "TOMORROW"
@@ -123,7 +118,7 @@ export function daySectionTitle(value, now) {
 }
 
 export function daySectionDate(value) {
-  return fullDayLabel(dateOf(value)).toUpperCase()
+  return fullDayLabel(new Date(value)).toUpperCase()
 }
 
 export function truncate(value, limit) {

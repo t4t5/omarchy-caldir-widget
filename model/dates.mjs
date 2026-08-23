@@ -16,10 +16,9 @@ export function addLocalDays(date, count) {
 }
 
 export function queryRange(today, daysAhead) {
-  const date = today instanceof Date ? today : new Date(today)
   const days = Math.max(1, Number(daysAhead) || 1)
   return {
-    from: localDateKey(date),
-    to: localDateKey(addLocalDays(date, days))
+    from: localDateKey(today),
+    to: localDateKey(addLocalDays(today, days))
   }
 }

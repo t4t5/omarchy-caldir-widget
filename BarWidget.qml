@@ -27,8 +27,8 @@ BarWidget {
   readonly property bool syncing: pullProcess.running
   readonly property bool installingCaldir: installProcess.running
   readonly property bool inMeeting: nextMeeting
-    && now.getTime() >= Number(nextMeeting.startMs)
-    && now.getTime() < Number(nextMeeting.endMs)
+    && now.getTime() >= nextMeeting.startMs
+    && now.getTime() < nextMeeting.endMs
   readonly property string label: nextMeeting
     ? "  " + Model.formatLabel(nextMeeting, now, maxTitleLength)
     : ""

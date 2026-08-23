@@ -663,7 +663,7 @@ Panel {
                         required property int index
                         readonly property var meeting: modelData
                         readonly property int navigationIndex: navigation.eventOffset(groupItem.index) + index
-                        readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
+                        readonly property bool ended: modelData.endMs <= root.now.getTime()
                         readonly property bool declined: modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
                         width: parent.width

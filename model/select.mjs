@@ -4,10 +4,6 @@ import { daySectionDate, daySectionTitle } from "./format.mjs"
 // The selectors below never sort: events arrive in parseAgenda order (start
 // ascending, longest first on ties), which filtering preserves.
 
-function nowMillis(now) {
-  return now instanceof Date ? now.getTime() : Number(now)
-}
-
 function localDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
@@ -48,10 +44,9 @@ function occupiedLocalDays(event, rangeStart, rangeEnd) {
   return days
 }
 
-function buildUpcoming(events, now, options) {
+function buildUpcoming(events, current, options) {
   const config = options || {}
   const lookaheadDays = Math.max(1, parseInt(config.lookaheadDays, 10) || 3)
-  const current = nowMillis(now)
   const horizon = current + lookaheadDays * DAY_MS
   const upcoming = []
 
@@ -79,8 +74,8 @@ const NEXT_GRACE_MS = MINUTE_MS
 const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
 export function nextMeeting(events, now, options) {
-  const current = nowMillis(now)
-  const candidates = buildUpcoming(events, now, options)
+  const current = now.getTime()
+  const candidates = buildUpcoming(events, current, options)
 
   let result = null
   for (let i = 0; i < candidates.length; i++) {
@@ -103,8 +98,7 @@ export function buildScheduleGroups(events, now, options) {
   const optionsConfig = options || {}
   const lookaheadDays = Math.max(1, parseInt(optionsConfig.lookaheadDays, 10) || 3)
   const byKey = {}
-  const currentDate = new Date(nowMillis(now))
-  const rangeStart = localDay(currentDate)
+  const rangeStart = localDay(now)
   const rangeEnd = addLocalDays(rangeStart, lookaheadDays)
 
   for (let i = 0; i < (events || []).length; i++) {
