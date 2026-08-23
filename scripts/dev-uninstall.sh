@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-plugin_id="t4t5.caldir"
+plugin_id="org.ren.caldir"
 target="$HOME/.config/omarchy/plugins/$plugin_id"
 
 if [[ ! -e "$target" && ! -L "$target" ]]; then

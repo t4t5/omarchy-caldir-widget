@@ -3,20 +3,11 @@ set -euo pipefail
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 plugin_dir="$HOME/.config/omarchy/plugins"
-plugin_id="t4t5.caldir"
-legacy_target="$plugin_dir/omarchy-caldir"
+plugin_id="org.ren.caldir"
 target="$plugin_dir/$plugin_id"
 
 omarchy plugin validate "$repo_dir"
 mkdir -p "$plugin_dir"
-
-if [[ -L "$legacy_target" && -e "$legacy_target" ]]; then
-  legacy_linked_dir="$(readlink -f -- "$legacy_target")"
-  if [[ "$legacy_linked_dir" == "$repo_dir" ]]; then
-    unlink -- "$legacy_target"
-    echo "Removed legacy development symlink $legacy_target"
-  fi
-fi
 
 if [[ -L "$target" ]]; then
   if [[ ! -e "$target" ]]; then

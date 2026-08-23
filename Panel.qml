@@ -9,7 +9,7 @@ import "Model.mjs" as Model
 // schedule. The host owns all data and actions so the panel remains presentational.
 Panel {
   id: root
-  moduleName: "t4t5.caldir"
+  moduleName: "org.ren.caldir"
   manageIpc: false
 
   property var anchorItem: null

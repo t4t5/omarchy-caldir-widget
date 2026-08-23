@@ -10,7 +10,7 @@ import "Model.mjs" as Model
 // click pulls remote calendars before refreshing the local view.
 BarWidget {
   id: root
-  moduleName: "t4t5.caldir"
+  moduleName: "org.ren.caldir"
 
   // The manifest schema types and bounds these settings.
   readonly property int daysAhead: setting("daysAhead", 2)
@@ -322,7 +322,7 @@ BarWidget {
   }
 
   IpcHandler {
-    target: "t4t5.caldir"
+    target: "org.ren.caldir"
 
     function refresh(): void { root.refresh() }
     function toggle(): void { root.togglePanel() }
