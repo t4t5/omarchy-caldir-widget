@@ -42,9 +42,10 @@ personal plugin directory:
 just install
 ```
 
-The recipe safely reuses only a symlink that already points to this checkout.
-It refuses to replace another file, directory, or symlink. After source edits,
-validate and cold-reload the shell with:
+The recipe safely reuses a symlink that already points to this checkout and
+repairs dangling symlinks left by a moved or renamed checkout. It refuses to
+replace another file, directory, or live symlink. After source edits, validate
+and cold-reload the shell with:
 
 ```sh
 just reload
@@ -97,7 +98,7 @@ widget checks the event URL, location, then description.
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `daysAhead` | `3` | Number of future schedule days to query |
+| `daysAhead` | `2` | Number of future schedule days to query |
 | `openScript` | `""` | Path to a custom event-open script |
 
 ### Customizing event opening

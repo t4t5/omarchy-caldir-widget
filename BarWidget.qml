@@ -13,7 +13,7 @@ BarWidget {
   moduleName: "omarchy-caldir"
 
   // The manifest schema types and bounds these settings.
-  readonly property int daysAhead: setting("daysAhead", 3)
+  readonly property int daysAhead: setting("daysAhead", 2)
 
   property var scheduleGroups: []
   property var nextMeeting: null

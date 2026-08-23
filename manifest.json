@@ -19,7 +19,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "daysAhead": 3,
+      "daysAhead": 2,
       "openScript": ""
     },
     "schema": [
@@ -29,7 +29,7 @@
         "label": "Days ahead",
         "min": 1,
         "max": 30,
-        "defaultValue": 3
+        "defaultValue": 2
       },
       {
         "key": "openScript",

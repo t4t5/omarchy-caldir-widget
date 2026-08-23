@@ -9,10 +9,18 @@ omarchy plugin validate "$repo_dir"
 mkdir -p "$plugin_dir"
 
 if [[ -L "$target" ]]; then
-  linked_dir="$(readlink -f -- "$target")"
-  if [[ "$linked_dir" != "$repo_dir" ]]; then
-    echo "Refusing to replace $target; it points to $linked_dir" >&2
-    exit 1
+  if [[ ! -e "$target" ]]; then
+    stale_link="$(readlink -- "$target")"
+    unlink -- "$target"
+    ln -s "$repo_dir" "$target"
+    echo "Replaced dangling symlink $target -> $stale_link"
+    echo "Linked $target -> $repo_dir"
+  else
+    linked_dir="$(readlink -f -- "$target")"
+    if [[ "$linked_dir" != "$repo_dir" ]]; then
+      echo "Refusing to replace $target; it points to $linked_dir" >&2
+      exit 1
+    fi
   fi
 elif [[ -e "$target" ]]; then
   echo "Refusing to replace existing plugin directory: $target" >&2
