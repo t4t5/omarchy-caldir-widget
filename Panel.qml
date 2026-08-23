@@ -725,6 +725,7 @@ Panel {
                             visible: !!eventRow.meeting.conferenceUrl
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: Style.space(16)
+                            Layout.rightMargin: Style.space(2)
                             horizontalAlignment: Text.AlignRight
                             text: ""
                             color: Color.accent
