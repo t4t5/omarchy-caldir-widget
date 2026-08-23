@@ -37,8 +37,6 @@ BarWidget {
     : ""
   readonly property bool showingFallbackIcon: label === ""
 
-  signal meetingDataChanged()
-
   function agendaCommand() {
     var range = Model.queryRange(new Date(), daysAhead)
     var command = [
@@ -50,11 +48,17 @@ BarWidget {
     return command
   }
 
+  // The binary is detected once; refreshes reuse the cached path and only
+  // re-detect after an install or a failed agenda run.
   function refresh() {
     if (caldirCheckProcess.running || agendaProcess.running || versionCheckProcess.running) return
+    if (caldirState === "ready" && caldirExecutable !== "") {
+      agendaProcess.command = agendaCommand()
+      agendaProcess.running = true
+      return
+    }
     caldirCheckProcess.command = ["which", "caldir"]
     caldirCheckProcess.running = true
-    meetingDataChanged()
   }
 
   function finishCaldirCheck(exitCode) {
@@ -86,7 +90,6 @@ BarWidget {
       "set -o pipefail; curl -sSf https://caldir.org/install.sh | sh"
     ]
     installProcess.running = true
-    meetingDataChanged()
   }
 
   function finishInstall(exitCode) {
@@ -98,7 +101,6 @@ BarWidget {
       loadError = detail !== ""
         ? "Installation failed: " + detail
         : "Installation failed. Visit caldir.org for manual setup instructions."
-      meetingDataChanged()
       return
     }
     caldirState = "checking"
@@ -143,7 +145,7 @@ BarWidget {
         : "Could not run caldir. Install it, then run caldir add and caldir pull."
     }
     failedAgendaError = ""
-    meetingDataChanged()
+    caldirExecutable = "" // agenda failed: re-detect the binary on the next refresh
   }
 
   function setEvents(events) {
@@ -155,7 +157,6 @@ BarWidget {
       lookaheadDays: daysAhead,
       showOnlyWithVideoLink: showOnlyWithVideoLink
     })
-    meetingDataChanged()
   }
 
   function pull() {
@@ -167,7 +168,6 @@ BarWidget {
     loadError = ""
     pullProcess.command = [caldirExecutable, "pull"]
     pullProcess.running = true
-    meetingDataChanged()
   }
 
   function finishPull(exitCode) {
@@ -176,7 +176,6 @@ BarWidget {
       loadError = detail !== ""
         ? "caldir pull failed: " + detail
         : "Could not pull calendars from caldir."
-      meetingDataChanged()
       return
     }
     refresh()
@@ -252,15 +251,6 @@ BarWidget {
     if (panelLoader.item) panelLoader.item.closeForPopoutSwitch()
   }
 
-  function injectPanel() {
-    var target = panelLoader.item
-    if (!target) return
-    if ("bar" in target) target.bar = root.bar
-    if ("settings" in target) target.settings = root.settings
-    if ("anchorItem" in target) target.anchorItem = button
-    if ("hostWidget" in target) target.hostWidget = root
-  }
-
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
   readonly property real openPanelIndicatorWidth: showingFallbackIcon
@@ -270,12 +260,7 @@ BarWidget {
         Math.round(Style.bar.iconSlot * 0.55))
     : button.labelWidth
 
-  onBarChanged: injectPanel()
-  onSettingsChanged: {
-    injectPanel()
-    Qt.callLater(root.refresh)
-  }
-  onMeetingDataChanged: if (panelLoader.item) panelLoader.item.reload()
+  onSettingsChanged: Qt.callLater(root.refresh)
 
   SystemClock {
     id: clock
@@ -363,8 +348,10 @@ BarWidget {
     source: Qt.resolvedUrl("Panel.qml")
     visible: false
     onLoaded: {
-      root.injectPanel()
-      Qt.callLater(root.injectPanel)
+      item.bar = Qt.binding(function() { return root.bar })
+      item.settings = Qt.binding(function() { return root.settings })
+      item.anchorItem = button
+      item.hostWidget = root
     }
   }
 

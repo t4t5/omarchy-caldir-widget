@@ -46,6 +46,14 @@ export function normalizedEvent(raw) {
   return event
 }
 
+// Start ascending, longest first on ties, then title. This is the only sort in
+// the model; the selectors in select.mjs assume their input keeps this order.
+function compareEvents(a, b) {
+  if (a.startMs !== b.startMs) return a.startMs - b.startMs
+  if (a.endMs !== b.endMs) return b.endMs - a.endMs
+  return a.title.localeCompare(b.title)
+}
+
 // Invalid JSON is exceptional so the QML caller can retain last-good data.
 export function parseAgenda(stdout) {
   const parsed = JSON.parse(text(stdout))
@@ -56,10 +64,6 @@ export function parseAgenda(stdout) {
     const event = normalizedEvent(parsed[i])
     if (event) events.push(event)
   }
-  events.sort(function(a, b) {
-    if (a.startMs !== b.startMs) return a.startMs - b.startMs
-    if (a.endMs !== b.endMs) return b.endMs - a.endMs
-    return a.title.localeCompare(b.title)
-  })
+  events.sort(compareEvents)
   return events
 }

@@ -46,6 +46,14 @@ export function meetingTimeLabel(start, end, now) {
   return labels.join(" · ")
 }
 
+function timeLeftLabel(end, current) {
+  const minutes = Math.max(1, Math.round((end - current) / MINUTE_MS))
+  if (minutes < 60) return minutes + " min left"
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  return (remainder ? hours + "h " + remainder + "m" : hours + "h") + " left"
+}
+
 export function relativeStatus(event, now) {
   if (!event) return ""
   const start = Number(event.startMs)
@@ -57,14 +65,7 @@ export function relativeStatus(event, now) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     return minutes >= 60 ? "starts at " + hm(start) : "starts in " + minutes + " min"
   }
-  if (current < end) {
-    const minutes = Math.max(1, Math.round((end - current) / MINUTE_MS))
-    if (minutes <= 1) return "1 min left"
-    if (minutes < 60) return minutes + " min left"
-    const hours = Math.floor(minutes / 60)
-    const remainder = minutes % 60
-    return (remainder ? hours + "h " + remainder + "m" : hours + "h") + " left"
-  }
+  if (current < end) return timeLeftLabel(end, current)
   return ""
 }
 
@@ -90,14 +91,7 @@ export function formatLabel(event, now, maxTitleLength) {
   let suffix = ""
 
   if (current >= start && current < end) {
-    const minutes = Math.max(1, Math.round((end - current) / MINUTE_MS))
-    if (minutes <= 1) suffix = " · 1 min left"
-    else if (minutes < 60) suffix = " · " + minutes + " min left"
-    else {
-      const hours = Math.floor(minutes / 60)
-      const remainder = minutes % 60
-      suffix = " · " + (remainder ? hours + "h " + remainder + "m" : hours + "h") + " left"
-    }
+    suffix = " · " + timeLeftLabel(end, current)
   } else if (start > current && start - current <= 60 * MINUTE_MS) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     suffix = " · in " + minutes + " min"

@@ -1,16 +1,11 @@
 import { DAY_MS, MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
 import { daySectionDate, daySectionTitle } from "./format.mjs"
 
+// The selectors below never sort: events arrive in parseAgenda order (start
+// ascending, longest first on ties), which filtering preserves.
+
 function nowMillis(now) {
   return now instanceof Date ? now.getTime() : Number(now)
-}
-
-function compareUpcoming(a, b) {
-  if (a.startMs !== b.startMs) return a.startMs - b.startMs
-  const aDuration = a.endMs - a.startMs
-  const bDuration = b.endMs - b.startMs
-  if (aDuration !== bDuration) return bDuration - aDuration
-  return String(a.title || "").localeCompare(String(b.title || ""))
 }
 
 function localDay(date) {
@@ -73,7 +68,6 @@ function buildUpcoming(events, now, options) {
     upcoming.push(event)
   }
 
-  upcoming.sort(compareUpcoming)
   return upcoming.length > maxRows ? upcoming.slice(0, maxRows) : upcoming
 }
 
@@ -119,14 +113,13 @@ export function buildScheduleGroups(events, now, options) {
   const rangeStart = localDay(currentDate)
   const rangeEnd = addLocalDays(rangeStart, lookaheadDays)
 
-  const sorted = []
+  const valid = []
   for (let i = 0; i < (events || []).length; i++) {
     const event = events[i]
     if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
-    sorted.push(event)
+    if (valid.length === maxRows) break
+    valid.push(event)
   }
-  sorted.sort(compareUpcoming)
-  const valid = sorted.length > maxRows ? sorted.slice(0, maxRows) : sorted
 
   for (let i = 0; i < valid.length; i++) {
     const event = valid[i]

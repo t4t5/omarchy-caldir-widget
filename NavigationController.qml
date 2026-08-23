@@ -14,6 +14,10 @@ QtObject {
   signal joinRequested(var event)
   signal openInCalendarRequested(var event)
 
+  onScheduleGroupsChanged: ensureSelection()
+  onNextEventChanged: ensureSelection()
+  onInMeetingChanged: ensureSelection()
+
   function eventCount() {
     var count = 0
     for (var i = 0; i < scheduleGroups.length; i++)

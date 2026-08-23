@@ -28,8 +28,8 @@ Panel {
     "caldir connect caldav",
     "caldir connect webcal"
   ]
-  property var scheduleGroups: []
-  property var next: null
+  readonly property var scheduleGroups: hostWidget && hostWidget.scheduleGroups ? hostWidget.scheduleGroups : []
+  readonly property var next: hostWidget ? hostWidget.nextMeeting : null
   property date now: hostWidget ? hostWidget.now : new Date()
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
@@ -45,7 +45,6 @@ Panel {
   }
 
   function open() {
-    reload()
     root.controller.show()
   }
 
@@ -53,31 +52,10 @@ Panel {
     root.controller.hide()
   }
 
-  function toggle() {
-    if (root.opened) root.close()
-    else root.open()
-  }
-
   function switchPanel(direction) {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
       return root.bar.switchPanelFrom(root.barIdentity, direction)
     return false
-  }
-
-  function reload() {
-    if (!hostWidget) return
-    scheduleGroups = hostWidget.scheduleGroups || []
-    next = hostWidget.nextMeeting || null
-    setupItem.visible = hostWidget.caldirState !== "ready"
-    calendarSetupItem.visible = hostWidget.caldirState === "ready"
-      && hostWidget.needsCalendarSetup
-    heroItem.visible = hostWidget.caldirState === "ready" && !!next
-    emptyItem.visible = hostWidget.caldirState === "ready"
-      && !hostWidget.needsCalendarSetup
-      && hostWidget.loadError === ""
-      && scheduleGroups.length === 0
-    scheduleItem.visible = hostWidget.caldirState === "ready" && scheduleGroups.length > 0
-    navigation.ensureSelection()
   }
 
   function scrollItemIntoView(item) {
@@ -120,16 +98,9 @@ Panel {
     Quickshell.execDetached(["xdg-open", "https://caldir.org"])
   }
 
-  onHostWidgetChanged: Qt.callLater(root.reload)
   onOpenedChanged: if (opened) {
-    root.reload()
     navigation.resetSelection()
     if (scroll) scroll.contentY = 0
-  }
-
-  Connections {
-    target: root.hostWidget
-    function onMeetingDataChanged() { root.reload() }
   }
 
   KeyboardPanel {
@@ -267,7 +238,7 @@ Panel {
 
           Item {
             id: setupItem
-            visible: false
+            visible: !!root.hostWidget && root.caldirState !== "ready"
             width: parent.width
             height: visible ? setupColumn.implicitHeight : 0
             implicitHeight: height
@@ -364,7 +335,7 @@ Panel {
 
           Item {
             id: calendarSetupItem
-            visible: false
+            visible: root.caldirState === "ready" && root.needsCalendarSetup
             width: parent.width
             height: visible ? calendarSetupSurface.implicitHeight : 0
             implicitHeight: height
@@ -444,7 +415,7 @@ Panel {
 
           Item {
             id: heroItem
-            visible: false
+            visible: root.caldirState === "ready" && !!root.next
             width: parent.width
             height: visible ? heroBlock.implicitHeight : 0
             implicitHeight: height
@@ -602,7 +573,10 @@ Panel {
 
           Item {
             id: emptyItem
-            visible: false
+            visible: root.caldirState === "ready"
+              && !root.needsCalendarSetup
+              && root.loadError === ""
+              && root.scheduleGroups.length === 0
             width: parent.width
             height: visible ? emptyColumn.implicitHeight + Style.space(16) : 0
             implicitHeight: height
@@ -641,7 +615,7 @@ Panel {
 
           Item {
             id: scheduleItem
-            visible: false
+            visible: root.caldirState === "ready" && root.scheduleGroups.length > 0
             width: parent.width
             height: visible ? scheduleColumn.implicitHeight : 0
             implicitHeight: height
