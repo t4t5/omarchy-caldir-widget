@@ -1,21 +1,27 @@
 set quiet
 
+# List all available tasks
+default:
+  @just --list
+
+# Run all tests and checks:
 test: check
   npm test
   bash tests/open-event.test.sh
   omarchy plugin validate .
 
+# Check the code for linting errors:
 check:
   ./scripts/lint.sh
 
-# Link this checkout as a personal plugin and show it on the right of the bar.
+# Install the current code in the Omarchy bar:
 install:
   ./scripts/dev-install.sh
 
-# Validate source edits and cold-reload the linked development plugin.
+# Reload the current code in the Omarchy bar:
 reload:
   ./scripts/dev-reload.sh
 
-# Disable the widget and remove this checkout's personal-plugin symlink.
+# Uninstall the current code from the Omarchy bar:
 uninstall:
   ./scripts/dev-uninstall.sh
