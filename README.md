@@ -11,7 +11,7 @@ separate through `caldir pull`.
 ## Requirements
 
 - Omarchy 4 with the Quickshell-based bar
-- `caldir` available on the shell's `PATH`
+- `caldir` v0.12.1 or newer, available on the shell's `PATH`
 - At least one calendar configured and pulled with caldir
 
 Check the data source before installing:

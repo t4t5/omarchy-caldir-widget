@@ -19,9 +19,11 @@ Panel {
   readonly property bool inMeeting: hostWidget ? hostWidget.inMeeting : false
   readonly property bool syncing: hostWidget ? hostWidget.syncing : false
   readonly property string caldirState: hostWidget ? hostWidget.caldirState : "checking"
+  readonly property bool needsCaldirUpdate: caldirState === "unsupported"
   readonly property bool installingCaldir: hostWidget ? hostWidget.installingCaldir : false
   readonly property string loadError: hostWidget ? hostWidget.loadError : ""
   readonly property bool needsCalendarSetup: hostWidget ? hostWidget.needsCalendarSetup : false
+  property bool updateCommandCopied: false
   readonly property var connectionCommands: [
     "caldir connect google",
     "caldir connect icloud",
@@ -98,6 +100,18 @@ Panel {
     Quickshell.execDetached(["xdg-open", "https://caldir.org"])
   }
 
+  function copyUpdateCommand() {
+    Quickshell.execDetached(["wl-copy", "caldir update"])
+    updateCommandCopied = true
+    copyFeedbackTimer.restart()
+  }
+
+  Timer {
+    id: copyFeedbackTimer
+    interval: 1500
+    onTriggered: root.updateCommandCopied = false
+  }
+
   onOpenedChanged: if (opened) {
     navigation.resetSelection()
     if (scroll) scroll.contentY = 0
@@ -169,6 +183,7 @@ Panel {
                 if (root.installingCaldir) return "Installing…"
                 if (root.caldirState === "checking") return "Checking…"
                 if (root.caldirState === "missing") return "Not installed"
+                if (root.needsCaldirUpdate) return "Update required"
                 if (root.syncing) return "Syncing…"
                 if (root.loadError !== "") return "Update failed"
                 return ""
@@ -250,7 +265,7 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "Install caldir"
+                text: root.needsCaldirUpdate ? "Update caldir" : "Install caldir"
                 color: root.contentForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.subtitle
@@ -260,7 +275,9 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "This widget needs the caldir CLI. Install it here, then follow the setup guide at caldir.org to connect your calendar."
+                text: root.needsCaldirUpdate
+                  ? root.loadError
+                  : "This widget needs caldir v0.12.1 or newer. Install it here, then follow the setup guide at caldir.org to connect your calendar."
                 color: Qt.darker(root.contentForeground, 1.35)
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -272,29 +289,54 @@ Panel {
                 radius: Style.cornerRadius
                 color: Style.normalFillFor(root.contentForeground, Color.accent)
                 borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
-                implicitHeight: setupCommands.implicitHeight + Style.space(16)
+                implicitHeight: setupCommand.implicitHeight + Style.space(16)
 
-                Column {
-                  id: setupCommands
+                Text {
+                  id: setupCommand
                   anchors.left: parent.left
-                  anchors.right: parent.right
+                  anchors.right: copyCommandIcon.visible ? copyCommandIcon.left : parent.right
                   anchors.verticalCenter: parent.verticalCenter
-                  anchors.margins: Style.space(8)
-                  spacing: Style.space(3)
+                  anchors.leftMargin: Style.space(8)
+                  anchors.rightMargin: Style.space(8)
+                  text: root.needsCaldirUpdate
+                    ? "caldir update"
+                    : "curl -sSf https://caldir.org/install.sh | sh"
+                  font.family: "monospace"
+                  font.pixelSize: Style.font.caption
+                  color: root.contentForeground
+                  wrapMode: Text.WrapAnywhere
+                }
 
-                  Text {
-                    width: parent.width
-                    text: "curl -sSf https://caldir.org/install.sh | sh"
-                    font.family: "monospace"
-                    font.pixelSize: Style.font.caption
-                    color: root.contentForeground
-                    wrapMode: Text.WrapAnywhere
-                  }
+                Text {
+                  id: copyCommandIcon
+                  visible: root.needsCaldirUpdate
+                  anchors.right: parent.right
+                  anchors.rightMargin: Style.space(10)
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: root.updateCommandCopied ? "󰄬" : "󰆏"
+                  color: root.contentForeground
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.body
+                }
+
+                MouseArea {
+                  id: copyCommandArea
+                  anchors.fill: parent
+                  enabled: root.needsCaldirUpdate
+                  hoverEnabled: enabled
+                  cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                  onClicked: root.copyUpdateCommand()
+                }
+
+                PanelToolTip {
+                  visible: copyCommandArea.enabled && copyCommandArea.containsMouse
+                  text: root.updateCommandCopied ? "Copied" : "Copy command"
+                  fontFamily: root.contentFontFamily
                 }
               }
 
               RowLayout {
-                visible: root.caldirState !== "checking"
+                visible: root.caldirState !== "checking" && !root.needsCaldirUpdate
                 width: parent.width
                 spacing: Style.space(8)
 

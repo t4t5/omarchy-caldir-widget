@@ -42,8 +42,8 @@ BarWidget {
     ]
   }
 
-  // The binary is detected once; refreshes reuse the cached path and only
-  // re-detect after an install or a failed agenda run.
+  // The binary and its supported version are detected once; refreshes reuse
+  // the cached path until an install or update requires another check.
   function refresh() {
     if (caldirCheckProcess.running || agendaProcess.running || caldirVersionCheck.running) return
     if (caldirState === "ready" && caldirExecutable !== "") {
@@ -67,10 +67,21 @@ BarWidget {
       return
     }
 
-    caldirState = "ready"
     caldirExecutable = executable
     needsCalendarSetup = false
     loadError = ""
+    caldirVersionCheck.start(executable)
+  }
+
+  function finishCaldirVersionCheck(errorMessage) {
+    if (errorMessage !== "") {
+      caldirState = "unsupported"
+      loadError = errorMessage
+      setEvents([])
+      return
+    }
+
+    caldirState = "ready"
     agendaProcess.command = agendaCommand()
     agendaProcess.running = true
   }
@@ -109,8 +120,10 @@ BarWidget {
       if (needsCalendarSetup) {
         loadError = ""
       } else {
-        loadError = ""
-        caldirVersionCheck.start(caldirExecutable, stderr)
+        var detail = Model.truncate(stderr, 320)
+        loadError = detail !== ""
+          ? "caldir failed: " + detail
+          : "Could not load calendar events from caldir."
       }
     } else {
       try {
@@ -259,10 +272,7 @@ BarWidget {
 
   CheckCaldirVersion {
     id: caldirVersionCheck
-    onFinished: function(errorMessage) {
-      root.loadError = errorMessage
-      root.caldirExecutable = "" // agenda failed: re-detect the binary on the next refresh
-    }
+    onFinished: function(errorMessage) { root.finishCaldirVersionCheck(errorMessage) }
   }
 
   Process {
@@ -364,6 +374,7 @@ BarWidget {
     if (caldirState === "checking") return "Checking for caldir…"
     if (caldirState === "installing") return "Installing caldir…"
     if (caldirState === "missing") return loadError + "\nClick to install"
+    if (caldirState === "unsupported") return loadError + "\nClick for update instructions"
     if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
     if (loadError !== "") return loadError
     if (!nextMeeting) return "No upcoming meetings"
