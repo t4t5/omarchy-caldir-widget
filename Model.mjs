@@ -32,6 +32,5 @@ export {
 } from "./model/format.mjs"
 
 export {
-  isNoCalendarsError,
-  isCaldirVersionBeforeJsonSupport
+  isNoCalendarsError
 } from "./model/errors.mjs"
