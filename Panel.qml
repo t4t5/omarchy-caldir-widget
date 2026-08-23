@@ -130,6 +130,9 @@ Panel {
       onActivateRequested: navigation.activateSelection()
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
+      onTextKey: function(text) {
+        if (text === "s" || text === "S") root.syncNow()
+      }
 
       Flickable {
         id: scroll
