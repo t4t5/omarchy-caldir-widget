@@ -1,12 +1,12 @@
 set quiet
 
-test:
+test: check
   npm test
   bash tests/open-event.test.sh
-  /usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell BarWidget.qml
-  /usr/lib/qt6/bin/qmllint NavigationController.qml
-  /usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell Panel.qml
   omarchy plugin validate .
+
+check:
+  ./scripts/lint.sh
 
 # Link this checkout as a personal plugin and show it on the right of the bar.
 install:
