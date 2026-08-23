@@ -11,7 +11,7 @@ QtObject {
   property int selectedHeroAction: 0
   property int selectedEventIndex: -1
 
-  signal joinRequested(var event)
+  signal openEventRequested(var event)
   signal openInCalendarRequested(var event)
 
   onScheduleGroupsChanged: ensureSelection()
@@ -32,12 +32,8 @@ QtObject {
     return offset
   }
 
-  function heroActionAvailable(action) {
-    return root.inMeeting && !!root.nextEvent && (action === 0 || action === 1)
-  }
-
   function canFocusHero() {
-    return heroActionAvailable(0) || heroActionAvailable(1)
+    return root.inMeeting && !!root.nextEvent
   }
 
   function ensureSelection() {
@@ -48,8 +44,6 @@ QtObject {
         selectedEventIndex = count > 0 ? 0 : -1
       } else {
         selectedEventIndex = -1
-        if (!heroActionAvailable(selectedHeroAction))
-          selectedHeroAction = heroActionAvailable(0) ? 0 : 1
       }
       return
     }
@@ -61,7 +55,7 @@ QtObject {
   function resetSelection() {
     if (canFocusHero()) {
       focusSection = "hero"
-      selectedHeroAction = heroActionAvailable(0) ? 0 : 1
+      selectedHeroAction = 0
       selectedEventIndex = -1
     } else {
       focusSection = "events"
@@ -87,9 +81,6 @@ QtObject {
       selectedEventIndex = direction > 0 ? 0 : count - 1
     else if (direction < 0 && selectedEventIndex === 0 && canFocusHero()) {
       focusSection = "hero"
-      selectedHeroAction = heroActionAvailable(selectedHeroAction)
-        ? selectedHeroAction
-        : (heroActionAvailable(0) ? 0 : 1)
       selectedEventIndex = -1
     }
     else
@@ -97,7 +88,7 @@ QtObject {
   }
 
   function selectHeroAction(action) {
-    if (!heroActionAvailable(action)) return
+    if (!canFocusHero() || (action !== 0 && action !== 1)) return
     focusSection = "hero"
     selectedHeroAction = action
     selectedEventIndex = -1
@@ -105,8 +96,8 @@ QtObject {
 
   function moveHeroSelection(direction) {
     if (focusSection !== "hero" || direction === 0) return
-    if (direction < 0 && heroActionAvailable(0)) selectedHeroAction = 0
-    else if (direction > 0 && heroActionAvailable(1)) selectedHeroAction = 1
+    if (direction < 0) selectedHeroAction = 0
+    else if (direction > 0) selectedHeroAction = 1
   }
 
   function selectedEvent() {
@@ -122,11 +113,12 @@ QtObject {
 
   function activateSelection() {
     if (focusSection === "hero") {
-      if (selectedHeroAction === 0 && heroActionAvailable(0)) joinRequested(root.nextEvent)
-      else if (selectedHeroAction === 1 && heroActionAvailable(1)) openInCalendarRequested(root.nextEvent)
+      if (!canFocusHero()) return
+      if (selectedHeroAction === 0) openEventRequested(root.nextEvent)
+      else if (selectedHeroAction === 1) openInCalendarRequested(root.nextEvent)
       return
     }
     var event = selectedEvent()
-    if (event) joinRequested(event)
+    if (event) openEventRequested(event)
   }
 }

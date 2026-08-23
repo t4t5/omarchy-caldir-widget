@@ -60,8 +60,8 @@ function buildUpcoming(events, now, options) {
     if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
     if (event.declined === true) continue
     if (event.endMs < current || event.startMs > horizon) continue
-    if (config.excludeAllDay === true && event.all_day === true) continue
-    if (config.excludeTentative === true && event.tentative === true) continue
+    if (event.all_day === true) continue
+    if (event.tentative === true) continue
     if (!event.conferenceUrl) continue
     upcoming.push(event)
   }
@@ -80,10 +80,7 @@ const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
 export function nextMeeting(events, now, options) {
   const current = nowMillis(now)
-  const candidates = buildUpcoming(events, now, Object.assign({}, options || {}, {
-    excludeAllDay: true,
-    excludeTentative: true
-  }))
+  const candidates = buildUpcoming(events, now, options)
 
   let result = null
   for (let i = 0; i < candidates.length; i++) {

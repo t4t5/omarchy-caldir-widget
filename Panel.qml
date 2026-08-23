@@ -40,7 +40,7 @@ Panel {
     scheduleGroups: root.scheduleGroups
     nextEvent: root.next
     inMeeting: root.inMeeting
-    onJoinRequested: function(event) { root.join(event) }
+    onOpenEventRequested: function(event) { root.openEvent(event) }
     onOpenInCalendarRequested: function(event) { root.openInCalendar(event) }
   }
 
@@ -74,7 +74,7 @@ Panel {
     })
   }
 
-  function join(event) {
+  function openEvent(event) {
     if (!hostWidget || !event) return
     hostWidget.openEvent(event)
     root.close()
@@ -456,7 +456,6 @@ Panel {
                   Item { Layout.fillWidth: true }
 
                   Text {
-                    visible: !!root.next
                     text: {
                       var parts = []
                       var duration = root.next ? Model.formatDuration(root.next.startMs, root.next.endMs) : ""
@@ -515,7 +514,7 @@ Panel {
                       if (isHovered) navigation.selectHeroAction(0)
                     }
                     onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
-                    onClicked: root.join(root.next)
+                    onClicked: root.openEvent(root.next)
 
                     BorderOverlay {
                       opacity: joinButton.keyboardFocused ? 1 : 0
@@ -530,7 +529,6 @@ Panel {
                     id: calendarButton
                     readonly property bool keyboardFocused: navigation.focusSection === "hero"
                       && navigation.selectedHeroAction === 1
-                    visible: !!root.next
                     Layout.fillWidth: true
                     text: "Open in Calendar"
                     iconText: "󰃯"
@@ -684,7 +682,7 @@ Panel {
                             navigation.focusSection = "events"
                             navigation.selectedEventIndex = eventRow.navigationIndex
                           }
-                          onClicked: root.join(eventRow.meeting)
+                          onClicked: root.openEvent(eventRow.meeting)
                         }
 
                         onHasCursorChanged: if (eventRow.hasCursor) root.scrollItemIntoView(eventRow)
