@@ -74,15 +74,15 @@ just uninstall
   schedule events. Enter activates the focused action.
 - Escape closes the popup; Tab switches panels.
 
-Failed commands and malformed responses leave the last successful schedule in
-place and show the error in the panel. Cancelled events and declined
-invitations stay in the schedule with a strikethrough, but never drive the
-bar. Tentative and unanswered invitations stay in the schedule, shown dimmed
-and italic, but never drive the bar. The schedule
-includes all events, while the bar can be limited to events containing a
-supported video URL. Multi-day events appear on each local calendar day they
-occupy, starting with today; event end dates are treated as exclusive. Events
-that already ended today remain in the schedule, dimmed with a check mark.
+Failed commands and malformed responses clear the current schedule and show
+the error in the panel. Cancelled events and declined invitations stay in the
+schedule with a strikethrough, but never drive the bar. Tentative and
+unanswered invitations stay in the schedule, shown dimmed and italic, but never
+drive the bar. The schedule includes all events, while the bar can be limited to
+events containing a supported video URL. Multi-day events appear on each local
+calendar day they occupy, starting with today; event end dates are treated as
+exclusive. Events that already ended today remain in the schedule, dimmed with
+a check mark.
 
 The bar meeting follows MeetingBar's selection rules: a meeting with under a
 minute left is never shown, and a meeting in progress hands the bar to the
@@ -99,7 +99,6 @@ widget checks the event URL, location, then description.
 | Setting | Default | Purpose |
 | --- | ---: | --- |
 | `daysAhead` | `3` | Number of future schedule days to query |
-| `pollSeconds` | `60` | Local `caldir events` polling interval |
 | `calendar` | `""` | Optional caldir calendar slug |
 | `showOnlyWithVideoLink` | `true` | Limit the bar/hero meeting to events with supported video URLs |
 | `maxTitleLength` | `28` | Maximum approximate bar-label length |
@@ -169,7 +168,7 @@ omarchy shell omarchy-caldir close
 
 ## Optional background pull
 
-The one-minute widget poll reads local files only. To pull provider changes
+The widget refreshes from local files once a minute. To pull provider changes
 every five minutes, install and enable the included systemd user timer:
 
 ```sh

@@ -13,7 +13,6 @@ BarWidget {
   moduleName: "omarchy-caldir"
 
   readonly property int daysAhead: Math.max(1, Math.min(30, Number(setting("daysAhead", 3)) || 3))
-  readonly property int pollSeconds: Math.max(15, Math.min(3600, Number(setting("pollSeconds", 60)) || 60))
   readonly property string calendarSlug: String(setting("calendar", "") || "").trim()
   readonly property int maxTitleLength: Math.max(8, Math.min(80, Number(setting("maxTitleLength", 28)) || 28))
   readonly property bool showOnlyWithVideoLink: {
@@ -24,22 +23,15 @@ BarWidget {
     return String(value).toLowerCase() !== "false"
   }
 
-  property var rawEvents: []
-  property var meetings: []
-  property var upcomingToday: []
   property var scheduleGroups: []
   property var nextMeeting: null
   property string loadError: ""
-  property bool configured: false
   property string caldirState: "checking"
   property string caldirExecutable: ""
-  property bool refreshQueued: false
-  property date lastUpdated: new Date(0)
   property date now: new Date()
 
   readonly property bool syncing: pullProcess.running
   readonly property bool installingCaldir: installProcess.running
-  readonly property bool lastFetchFailed: loadError !== ""
   readonly property bool inMeeting: nextMeeting
     && now.getTime() >= Number(nextMeeting.startMs)
     && now.getTime() < Number(nextMeeting.endMs)
@@ -62,10 +54,7 @@ BarWidget {
   }
 
   function refresh() {
-    if (caldirCheckProcess.running || agendaProcess.running) {
-      refreshQueued = true
-      return
-    }
+    if (caldirCheckProcess.running || agendaProcess.running) return
     caldirCheckProcess.command = ["which", "caldir"]
     caldirCheckProcess.running = true
     meetingDataChanged()
@@ -78,8 +67,7 @@ BarWidget {
       caldirState = "missing"
       caldirExecutable = ""
       if (!wasMissing || loadError === "") loadError = "caldir is not installed."
-      refreshQueued = false
-      meetingDataChanged()
+      setEvents([])
       return
     }
 
@@ -119,6 +107,7 @@ BarWidget {
   }
 
   function finishRefresh(exitCode) {
+    var events = []
     if (exitCode !== 0) {
       var detail = Model.truncate(String(agendaStderr.text || "").trim(), 320)
       loadError = detail !== ""
@@ -126,36 +115,21 @@ BarWidget {
         : "Could not run caldir. Install it, then run caldir add and caldir pull."
     } else {
       try {
-        rawEvents = Model.parseAgenda(agendaStdout.text || "")
-        configured = true
-        lastUpdated = new Date()
+        events = Model.parseAgenda(agendaStdout.text || "")
         loadError = ""
-        recalc()
       } catch (error) {
         loadError = "caldir returned invalid JSON: " + error
       }
     }
-    meetingDataChanged()
-
-    if (refreshQueued) {
-      refreshQueued = false
-      Qt.callLater(root.refresh)
-    }
+    setEvents(events)
   }
 
-  function recalc() {
-    meetings = Model.buildUpcoming(rawEvents, now, {
-      lookaheadDays: daysAhead,
-      showOnlyWithVideoLink: showOnlyWithVideoLink,
-      maxRows: 8,
-      excludeAllDay: true
-    })
-    upcomingToday = Model.upcomingToday(rawEvents, now)
-    scheduleGroups = Model.buildScheduleGroups(rawEvents, now, {
+  function setEvents(events) {
+    scheduleGroups = Model.buildScheduleGroups(events, now, {
       lookaheadDays: daysAhead,
       maxRows: 20
     })
-    nextMeeting = Model.nextMeeting(rawEvents, now, {
+    nextMeeting = Model.nextMeeting(events, now, {
       lookaheadDays: daysAhead,
       showOnlyWithVideoLink: showOnlyWithVideoLink
     })
@@ -277,16 +251,17 @@ BarWidget {
   onBarChanged: injectPanel()
   onSettingsChanged: {
     injectPanel()
-    recalc()
     Qt.callLater(root.refresh)
   }
-  onNowChanged: recalc()
   onMeetingDataChanged: if (panelLoader.item) panelLoader.item.reload()
 
   SystemClock {
     id: clock
     precision: SystemClock.Minutes
-    onDateChanged: root.now = date
+    onDateChanged: {
+      root.now = date
+      root.refresh()
+    }
   }
 
   Process {
@@ -344,13 +319,6 @@ BarWidget {
     id: openProcess
     running: false
     clearEnvironment: false
-  }
-
-  Timer {
-    interval: root.pollSeconds * 1000
-    running: true
-    repeat: true
-    onTriggered: root.refresh()
   }
 
   Loader {
@@ -417,13 +385,12 @@ BarWidget {
     if (caldirState === "checking") return "Checking for caldir…"
     if (caldirState === "installing") return "Installing caldir…"
     if (caldirState === "missing") return loadError + "\nClick to install"
-    if (!configured && loadError !== "") return loadError + "\nClick for setup help"
-    if (!nextMeeting) return "No upcoming meetings" + (loadError !== "" ? "\n" + loadError : "")
+    if (loadError !== "") return loadError
+    if (!nextMeeting) return "No upcoming meetings"
     var title = nextMeeting.title || "(Untitled)"
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs)
     var status = Model.relativeStatus(nextMeeting, now)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")
-    if (loadError !== "") line += "\n" + loadError
     return line
   }
 

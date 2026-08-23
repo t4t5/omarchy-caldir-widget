@@ -62,9 +62,11 @@ Panel {
     scheduleGroups = hostWidget.scheduleGroups || []
     next = hostWidget.nextMeeting || null
     setupItem.visible = hostWidget.caldirState !== "ready"
-    heroItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && !!next
-    emptyItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && scheduleGroups.length === 0
-    scheduleItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && scheduleGroups.length > 0
+    heroItem.visible = hostWidget.caldirState === "ready" && !!next
+    emptyItem.visible = hostWidget.caldirState === "ready"
+      && hostWidget.loadError === ""
+      && scheduleGroups.length === 0
+    scheduleItem.visible = hostWidget.caldirState === "ready" && scheduleGroups.length > 0
     navigation.ensureSelection()
   }
 
@@ -187,9 +189,7 @@ Panel {
                 if (root.caldirState === "checking") return "Checking…"
                 if (root.caldirState === "missing") return "Not installed"
                 if (root.syncing) return "Syncing…"
-                if (root.loadError !== "") return root.hostWidget && root.hostWidget.configured ? "Update failed · Cached" : "Unavailable"
-                if (root.hostWidget && root.hostWidget.configured)
-                  return Model.formatUpdated(root.hostWidget.lastUpdated, root.now)
+                if (root.loadError !== "") return "Update failed"
                 return ""
               }
               color: root.loadError !== "" ? Color.urgent : Qt.darker(root.contentForeground, 1.5)
@@ -224,7 +224,7 @@ Panel {
 
           BorderSurface {
             id: errorItem
-            visible: root.loadError !== "" && !!(root.hostWidget && root.hostWidget.configured)
+            visible: root.loadError !== "" && root.caldirState === "ready"
             width: parent.width
             height: visible ? errorText.implicitHeight + Style.space(16) : 0
             implicitHeight: height

@@ -124,17 +124,6 @@ export function daySectionTitle(value, now) {
   return WEEKDAYS[date.getDay()].toUpperCase() + " " + date.getDate() + " " + MONTHS[date.getMonth()].toUpperCase()
 }
 
-export function formatUpdated(value, now) {
-  const date = dateOf(value)
-  const current = dateOf(now)
-  if (isNaN(date.getTime()) || date.getTime() <= 0 || isNaN(current.getTime())) return ""
-  const minutes = Math.max(0, Math.floor((current.getTime() - date.getTime()) / MINUTE_MS))
-  if (minutes < 1) return "just now"
-  if (minutes < 60) return minutes + "m ago"
-  const hours = Math.floor(minutes / 60)
-  return hours < 24 ? hours + "h ago" : hm(date)
-}
-
 export function truncate(value, limit) {
   const string = value === undefined || value === null ? "" : String(value)
   const max = Math.max(1, Number(limit) || 24)

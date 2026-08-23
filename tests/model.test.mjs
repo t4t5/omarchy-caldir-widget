@@ -371,20 +371,11 @@ test("relative status and time formatting use precomputed timestamps", () => {
   assert.equal(Model.relativeStatus(active, NOW), "3h left")
 })
 
-test("upcomingToday includes ongoing events and excludes tomorrow", () => {
-  const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-19T09:00:00+01:00", { end: "2026-08-19T10:30:00+01:00" }),
-    event("2026-08-20T09:00:00+01:00")
-  ]))
-  assert.equal(Model.upcomingToday(parsed, NOW).length, 1)
-})
-
 test("queryRange uses local calendar-day arithmetic", () => {
   assert.deepEqual(Model.queryRange(NOW, 3), { from: "2026-08-19", to: "2026-08-22" })
   assert.equal(Model.localDateKey(Model.addLocalDays(new Date(2026, 7, 31), 1)), "2026-09-01")
 })
 
-test("calendar and update labels are stable", () => {
-  assert.equal(Model.formatUpdated(new Date(NOW.getTime() - 5 * Model.MINUTE_MS), NOW), "5m ago")
+test("truncation is stable", () => {
   assert.equal(Model.truncate("A very long event", 8), "A very…")
 })

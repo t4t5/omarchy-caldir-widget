@@ -143,19 +143,3 @@ export function buildScheduleGroups(events, now, options) {
 
   return Object.keys(byKey).sort().map(function(key) { return byKey[key] })
 }
-
-export function upcomingToday(events, now) {
-  const current = nowMillis(now)
-  const currentDate = new Date(current)
-  const endOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999).getTime()
-  const output = []
-
-  for (let i = 0; i < (events || []).length; i++) {
-    const event = events[i]
-    if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
-    if (event.endMs < current || event.startMs > endOfDay) continue
-    output.push(event)
-  }
-  output.sort(compareUpcoming)
-  return output
-}

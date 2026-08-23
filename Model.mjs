@@ -23,8 +23,7 @@ export {
 export {
   nextMeeting,
   buildUpcoming,
-  buildScheduleGroups,
-  upcomingToday
+  buildScheduleGroups
 } from "./model/select.mjs"
 
 export {
@@ -32,7 +31,6 @@ export {
   relativeStatus,
   meetingTimeLabel,
   formatDuration,
-  formatUpdated,
   hm,
   timeRange,
   daySectionTitle,
