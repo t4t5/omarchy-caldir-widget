@@ -1,6 +1,4 @@
 export const MINUTE_MS = 60 * 1000
-export const HOUR_MS = 60 * MINUTE_MS
-export const DAY_MS = 24 * HOUR_MS
 
 function pad2(value) {
   const number = Number(value)
@@ -16,9 +14,8 @@ export function addLocalDays(date, count) {
 }
 
 export function queryRange(today, daysAhead) {
-  const days = Math.max(1, Number(daysAhead) || 1)
   return {
     from: localDateKey(today),
-    to: localDateKey(addLocalDays(today, days))
+    to: localDateKey(addLocalDays(today, daysAhead))
   }
 }

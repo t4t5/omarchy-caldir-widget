@@ -12,7 +12,7 @@ BarWidget {
   id: root
   moduleName: "omarchy-caldir"
 
-  // The manifest schema types and bounds these; the model clamps its own inputs.
+  // The manifest schema types and bounds these settings.
   readonly property int daysAhead: setting("daysAhead", 3)
   readonly property int maxTitleLength: setting("maxTitleLength", 28)
 
@@ -127,8 +127,8 @@ BarWidget {
   }
 
   function setEvents(events) {
-    scheduleGroups = Model.buildScheduleGroups(events, now, { lookaheadDays: daysAhead })
-    nextMeeting = Model.nextMeeting(events, now, { lookaheadDays: daysAhead })
+    scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
+    nextMeeting = Model.nextMeeting(events, now)
   }
 
   function pull() {
@@ -377,7 +377,7 @@ BarWidget {
     if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
     if (loadError !== "") return loadError
     if (!nextMeeting) return "No upcoming meetings"
-    var title = nextMeeting.title || "(Untitled)"
+    var title = nextMeeting.title
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs)
     var status = Model.relativeStatus(nextMeeting, now)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")

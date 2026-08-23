@@ -472,7 +472,7 @@ Panel {
 
                 Text {
                   width: parent.width
-                  text: root.next ? String(root.next.title || "(Untitled)") : ""
+                  text: root.next ? String(root.next.title) : ""
                   color: root.contentForeground
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.title
@@ -709,7 +709,7 @@ Panel {
                           Text {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
-                            text: eventRow.meeting.title || "(Untitled)"
+                            text: eventRow.meeting.title
                             color: eventRow.tentative
                               ? Qt.darker(root.contentForeground, 1.35)
                               : root.contentForeground

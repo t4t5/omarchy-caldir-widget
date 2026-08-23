@@ -1,4 +1,4 @@
-import { DAY_MS, MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
+import { MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
 import { daySectionDate, daySectionTitle } from "./format.mjs"
 
 // The selectors below never sort: events arrive in parseAgenda order (start
@@ -44,17 +44,13 @@ function occupiedLocalDays(event, rangeStart, rangeEnd) {
   return days
 }
 
-function buildUpcoming(events, current, options) {
-  const config = options || {}
-  const lookaheadDays = Math.max(1, parseInt(config.lookaheadDays, 10) || 3)
-  const horizon = current + lookaheadDays * DAY_MS
+function buildUpcoming(events, current) {
   const upcoming = []
 
-  for (let i = 0; i < (events || []).length; i++) {
+  for (let i = 0; i < events.length; i++) {
     const event = events[i]
-    if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
     if (event.declined === true) continue
-    if (event.endMs < current || event.startMs > horizon) continue
+    if (event.endMs < current) continue
     if (event.all_day === true) continue
     if (event.tentative === true) continue
     if (!event.conferenceUrl) continue
@@ -73,9 +69,9 @@ function buildUpcoming(events, current, options) {
 const NEXT_GRACE_MS = MINUTE_MS
 const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
-export function nextMeeting(events, now, options) {
+export function nextMeeting(events, now) {
   const current = now.getTime()
-  const candidates = buildUpcoming(events, current, options)
+  const candidates = buildUpcoming(events, current)
 
   let result = null
   for (let i = 0; i < candidates.length; i++) {
@@ -93,17 +89,15 @@ export function nextMeeting(events, now, options) {
 }
 
 // The schedule keeps events that already ended today so the panel can dim
-// them; occupiedLocalDays clips everything to [today, today + lookaheadDays].
+// them; occupiedLocalDays clips everything to [today, today + daysAhead].
 export function buildScheduleGroups(events, now, options) {
-  const optionsConfig = options || {}
-  const lookaheadDays = Math.max(1, parseInt(optionsConfig.lookaheadDays, 10) || 3)
+  const daysAhead = options.daysAhead
   const byKey = {}
   const rangeStart = localDay(now)
-  const rangeEnd = addLocalDays(rangeStart, lookaheadDays)
+  const rangeEnd = addLocalDays(rangeStart, daysAhead)
 
-  for (let i = 0; i < (events || []).length; i++) {
+  for (let i = 0; i < events.length; i++) {
     const event = events[i]
-    if (!event || !isFinite(event.startMs) || !isFinite(event.endMs)) continue
     const days = occupiedLocalDays(event, rangeStart, rangeEnd)
     for (let j = 0; j < days.length; j++) {
       const date = days[j]

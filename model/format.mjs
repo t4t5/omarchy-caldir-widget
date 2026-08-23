@@ -70,18 +70,16 @@ function dayLabel(value, now) {
   const key = localDateKey(date)
   if (key === localDateKey(current)) return "Today"
   if (key === localDateKey(addLocalDays(current, 1))) return "Tmrw"
-  if (key === localDateKey(addLocalDays(current, -1))) return "Yest"
   const distance = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(current.getFullYear(), current.getMonth(), current.getDate())) / 86400000)
   if (distance > 1 && distance < 7) return WEEKDAYS[date.getDay()]
   return fullDayLabel(date)
 }
 
 export function formatLabel(event, now, maxTitleLength) {
-  if (!event || !isFinite(event.startMs)) return ""
-  let title = String(event.title || "(Untitled)")
-  const limit = Math.max(8, parseInt(maxTitleLength, 10) || 28)
+  let title = event.title
+  const limit = maxTitleLength
   const start = event.startMs
-  const end = isFinite(event.endMs) ? event.endMs : start
+  const end = event.endMs
   const current = now.getTime()
   let suffix = ""
 
