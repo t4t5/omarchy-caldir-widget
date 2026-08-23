@@ -98,7 +98,6 @@ widget checks the event URL, location, then description.
 | Setting | Default | Purpose |
 | --- | ---: | --- |
 | `daysAhead` | `3` | Number of future schedule days to query |
-| `maxTitleLength` | `28` | Maximum approximate bar-label length |
 | `openScript` | `""` | Path to a custom event-open script |
 
 ### Customizing event opening

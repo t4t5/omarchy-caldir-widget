@@ -2,6 +2,7 @@ import { addLocalDays, localDateKey, MINUTE_MS } from "./dates.mjs"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const MAX_BAR_LABEL_LENGTH = 28
 
 function pad2(value) {
   return (value < 10 ? "0" : "") + value
@@ -75,9 +76,8 @@ function dayLabel(value, now) {
   return fullDayLabel(date)
 }
 
-export function formatLabel(event, now, maxTitleLength) {
+export function formatLabel(event, now) {
   let title = event.title
-  const limit = maxTitleLength
   const start = event.startMs
   const end = event.endMs
   const current = now.getTime()
@@ -92,7 +92,7 @@ export function formatLabel(event, now, maxTitleLength) {
     suffix = " · " + (sameDay(new Date(start), now) ? hm(start) : dayLabel(start, now) + " " + hm(start))
   }
 
-  const titleLimit = Math.max(3, limit - suffix.length)
+  const titleLimit = Math.max(3, MAX_BAR_LABEL_LENGTH - suffix.length)
   if (title.length > titleLimit) title = title.slice(0, Math.max(1, titleLimit - 1)) + "…"
   return title + suffix
 }

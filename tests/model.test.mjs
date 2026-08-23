@@ -370,16 +370,21 @@ test("schedule repeats timed events on each occupied day and excludes a midnight
 
 test("bar labels cover one minute, hours left, and cross-day events", () => {
   const oneMinute = Model.normalizedEvent(event("2026-08-19T10:01:00+01:00", { title: "Standup" }))
-  assert.equal(Model.formatLabel(oneMinute, NOW, 40), "Standup · in 1 min")
+  assert.equal(Model.formatLabel(oneMinute, NOW), "Standup · in 1 min")
 
   const longMeeting = Model.normalizedEvent(event("2026-08-19T09:00:00+01:00", {
     title: "Workshop",
     end: "2026-08-19T13:00:00+01:00"
   }))
-  assert.equal(Model.formatLabel(longMeeting, NOW, 40), "Workshop · 3h left")
+  assert.equal(Model.formatLabel(longMeeting, NOW), "Workshop · 3h left")
 
   const tomorrow = Model.normalizedEvent(event("2026-08-20T09:00:00+01:00", { title: "Planning" }))
-  assert.equal(Model.formatLabel(tomorrow, NOW, 40), "Planning · Tmrw 09:00")
+  assert.equal(Model.formatLabel(tomorrow, NOW), "Planning · Tmrw 09:00")
+
+  const longTitle = Model.normalizedEvent(event("2026-08-19T10:01:00+01:00", {
+    title: "A very long meeting title"
+  }))
+  assert.equal(Model.formatLabel(longTitle, NOW), "A very long meet… · in 1 min")
 })
 
 test("relative status and time formatting use precomputed timestamps", () => {

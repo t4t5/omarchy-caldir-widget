@@ -14,7 +14,6 @@ BarWidget {
 
   // The manifest schema types and bounds these settings.
   readonly property int daysAhead: setting("daysAhead", 3)
-  readonly property int maxTitleLength: setting("maxTitleLength", 28)
 
   property var scheduleGroups: []
   property var nextMeeting: null
@@ -30,7 +29,7 @@ BarWidget {
     && now.getTime() >= nextMeeting.startMs
     && now.getTime() < nextMeeting.endMs
   readonly property string label: nextMeeting
-    ? "  " + Model.formatLabel(nextMeeting, now, maxTitleLength)
+    ? "  " + Model.formatLabel(nextMeeting, now)
     : ""
   readonly property bool showingFallbackIcon: label === ""
 
