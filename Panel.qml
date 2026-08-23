@@ -155,7 +155,7 @@ Panel {
               id: headingLabel
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
-              text: "EVENTS"
+              text: "CALENDAR"
               color: Qt.darker(root.contentForeground, 1.5)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
