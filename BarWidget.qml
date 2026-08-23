@@ -14,9 +14,7 @@ BarWidget {
 
   // The manifest schema types and bounds these; the model clamps its own inputs.
   readonly property int daysAhead: setting("daysAhead", 3)
-  readonly property string calendarSlug: String(setting("calendar", "") || "").trim()
   readonly property int maxTitleLength: setting("maxTitleLength", 28)
-  readonly property bool showOnlyWithVideoLink: setting("showOnlyWithVideoLink", true) === true
 
   property var scheduleGroups: []
   property var nextMeeting: null
@@ -33,19 +31,17 @@ BarWidget {
     && now.getTime() >= Number(nextMeeting.startMs)
     && now.getTime() < Number(nextMeeting.endMs)
   readonly property string label: nextMeeting
-    ? (nextMeeting.conferenceUrl ? "  " : "󰃯  ") + Model.formatLabel(nextMeeting, now, maxTitleLength)
+    ? "  " + Model.formatLabel(nextMeeting, now, maxTitleLength)
     : ""
   readonly property bool showingFallbackIcon: label === ""
 
   function agendaCommand() {
     var range = Model.queryRange(new Date(), daysAhead)
-    var command = [
+    return [
       caldirExecutable, "events", "--json",
       "--from", range.from,
       "--to", range.to
     ]
-    if (calendarSlug !== "") command.push("--calendar", calendarSlug)
-    return command
   }
 
   // The binary is detected once; refreshes reuse the cached path and only
@@ -149,14 +145,8 @@ BarWidget {
   }
 
   function setEvents(events) {
-    scheduleGroups = Model.buildScheduleGroups(events, now, {
-      lookaheadDays: daysAhead,
-      maxRows: 20
-    })
-    nextMeeting = Model.nextMeeting(events, now, {
-      lookaheadDays: daysAhead,
-      showOnlyWithVideoLink: showOnlyWithVideoLink
-    })
+    scheduleGroups = Model.buildScheduleGroups(events, now, { lookaheadDays: daysAhead })
+    nextMeeting = Model.nextMeeting(events, now, { lookaheadDays: daysAhead })
   }
 
   function pull() {

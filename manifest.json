@@ -20,8 +20,6 @@
     "defaultSection": "right",
     "defaults": {
       "daysAhead": 3,
-      "calendar": "",
-      "showOnlyWithVideoLink": true,
       "maxTitleLength": 28,
       "openScript": ""
     },
@@ -33,19 +31,6 @@
         "min": 1,
         "max": 30,
         "defaultValue": 3
-      },
-      {
-        "key": "calendar",
-        "type": "string",
-        "label": "Calendar slug",
-        "defaultValue": "",
-        "description": "Optional caldir calendar slug. Leave blank to include every calendar."
-      },
-      {
-        "key": "showOnlyWithVideoLink",
-        "type": "boolean",
-        "label": "Only meetings with video links",
-        "defaultValue": true
       },
       {
         "key": "maxTitleLength",

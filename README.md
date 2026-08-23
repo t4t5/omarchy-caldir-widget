@@ -78,10 +78,10 @@ Failed commands and malformed responses clear the current schedule and show
 the error in the panel. Cancelled events and declined invitations stay in the
 schedule with a strikethrough, but never drive the bar. Tentative and
 unanswered invitations stay in the schedule, shown dimmed and italic, but never
-drive the bar. The schedule includes all events, while the bar can be limited to
-events containing a supported video URL. Multi-day events appear on each local
-calendar day they occupy, starting with today; event end dates are treated as
-exclusive. Events that already ended today remain in the schedule, dimmed with
+drive the bar. The schedule includes all events, while the bar and next-meeting
+hero only follow events with a supported video URL. Multi-day events appear on
+each local calendar day they occupy, starting with today; event end dates are
+treated as exclusive. Events that already ended today remain in the schedule, dimmed with
 a check mark.
 
 The bar meeting follows MeetingBar's selection rules: a meeting with under a
@@ -99,8 +99,6 @@ widget checks the event URL, location, then description.
 | Setting | Default | Purpose |
 | --- | ---: | --- |
 | `daysAhead` | `3` | Number of future schedule days to query |
-| `calendar` | `""` | Optional caldir calendar slug |
-| `showOnlyWithVideoLink` | `true` | Limit the bar/hero meeting to events with supported video URLs |
 | `maxTitleLength` | `28` | Maximum approximate bar-label length |
 | `openScript` | `""` | Path to a custom event-open script |
 

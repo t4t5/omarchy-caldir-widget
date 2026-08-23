@@ -262,7 +262,7 @@ test("tentative invitations stay off the bar but keep their schedule slot", () =
   assert.equal(parsed[2].tentative, false)
   assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Confirmed")
 
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
   assert.deepEqual(groups[0].items.map(item => item.title), ["Maybe", "Sure", "Confirmed"])
 })
 
@@ -286,7 +286,7 @@ test("cancelled and declined events stay off the bar but keep their schedule slo
 
   assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Confirmed")
 
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
   assert.deepEqual(groups[0].items.map(item => item.title), ["Cancelled", "Declined", "Confirmed"])
 })
 
@@ -296,12 +296,12 @@ test("the schedule keeps events that already ended today", () => {
     event("2026-08-19T08:00:00+01:00", { title: "Done", end: "2026-08-19T08:30:00+01:00" }),
     event("2026-08-19T11:00:00+01:00", { title: "Later" })
   ]))
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19"])
   assert.deepEqual(groups[0].items.map(item => item.title), ["Done", "Later"])
 })
 
-test("the video-link filter only affects the bar meeting list", () => {
+test("only video meetings drive the bar; the schedule keeps everything", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T10:10:00+01:00", { title: "No link" }),
     event("2026-08-19T10:20:00+01:00", {
@@ -309,9 +309,22 @@ test("the video-link filter only affects the bar meeting list", () => {
       description: "https://meet.google.com/abc-defg-hij"
     })
   ]))
-  assert.equal(Model.nextMeeting(parsed, NOW, { showOnlyWithVideoLink: true }).title, "Video")
-  assert.equal(Model.nextMeeting(parsed, NOW, { showOnlyWithVideoLink: false }).title, "No link")
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Video")
   assert.equal(Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })[0].items.length, 2)
+})
+
+test("a busy day never truncates later schedule days", () => {
+  const raw = []
+  for (let i = 0; i < 30; i++) {
+    const minute = String(i).padStart(2, "0")
+    raw.push(event(`2026-08-19T11:${minute}:00+01:00`, { title: `Today ${i}` }))
+  }
+  raw.push(event("2026-08-20T11:00:00+01:00", { title: "Tomorrow" }))
+
+  const groups = Model.buildScheduleGroups(Model.parseAgenda(JSON.stringify(raw)), NOW, { lookaheadDays: 3 })
+  assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20"])
+  assert.equal(groups[0].items.length, 30)
+  assert.deepEqual(groups[1].items.map(item => item.title), ["Tomorrow"])
 })
 
 test("schedule grouping uses today, tomorrow, and dated headings", () => {
@@ -320,7 +333,7 @@ test("schedule grouping uses today, tomorrow, and dated headings", () => {
     event("2026-08-20T11:00:00+01:00", { title: "Tomorrow" }),
     event("2026-08-21T11:00:00+01:00", { title: "Later" })
   ]))
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
   assert.deepEqual(groups.map(group => group.title), ["TODAY", "TOMORROW", "FRI 21 AUG"])
   assert.deepEqual(groups.map(group => group.dateTitle), ["WED 19 AUG", "THU 20 AUG", "FRI 21 AUG"])
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
@@ -334,7 +347,7 @@ test("schedule repeats multi-day all-day events from today through their exclusi
       end: "2026-08-22"
     })
   ]))
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
 
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
   assert.deepEqual(groups.map(group => group.title), ["TODAY", "TOMORROW", "FRI 21 AUG"])
@@ -348,7 +361,7 @@ test("schedule repeats timed events on each occupied day and excludes a midnight
       end: "2026-08-22T00:00:00+01:00"
     })
   ]))
-  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
+  const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3 })
 
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19", "2026-08-20", "2026-08-21"])
   assert.deepEqual(groups.map(group => group.items[0].title), ["Hackathon", "Hackathon", "Hackathon"])
