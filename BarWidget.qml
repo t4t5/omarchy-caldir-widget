@@ -26,6 +26,7 @@ BarWidget {
   property var scheduleGroups: []
   property var nextMeeting: null
   property string loadError: ""
+  property bool needsCalendarSetup: false
   property string caldirState: "checking"
   property string caldirExecutable: ""
   property date now: new Date()
@@ -66,6 +67,7 @@ BarWidget {
       var wasMissing = caldirState === "missing"
       caldirState = "missing"
       caldirExecutable = ""
+      needsCalendarSetup = false
       if (!wasMissing || loadError === "") loadError = "caldir is not installed."
       setEvents([])
       return
@@ -73,6 +75,7 @@ BarWidget {
 
     caldirState = "ready"
     caldirExecutable = executable
+    needsCalendarSetup = false
     loadError = ""
     agendaProcess.command = agendaCommand()
     agendaProcess.running = true
@@ -109,15 +112,23 @@ BarWidget {
   function finishRefresh(exitCode) {
     var events = []
     if (exitCode !== 0) {
-      var detail = Model.truncate(String(agendaStderr.text || "").trim(), 320)
-      loadError = detail !== ""
-        ? "caldir failed: " + detail
-        : "Could not run caldir. Install it, then run caldir add and caldir pull."
+      var stderr = String(agendaStderr.text || "").trim()
+      needsCalendarSetup = Model.isNoCalendarsError(stderr)
+      if (needsCalendarSetup) {
+        loadError = ""
+      } else {
+        var detail = Model.truncate(stderr, 320)
+        loadError = detail !== ""
+          ? "caldir failed: " + detail
+          : "Could not run caldir. Install it, then run caldir add and caldir pull."
+      }
     } else {
       try {
         events = Model.parseAgenda(agendaStdout.text || "")
+        needsCalendarSetup = false
         loadError = ""
       } catch (error) {
+        needsCalendarSetup = false
         loadError = "caldir returned invalid JSON: " + error
       }
     }
@@ -385,6 +396,7 @@ BarWidget {
     if (caldirState === "checking") return "Checking for caldir…"
     if (caldirState === "installing") return "Installing caldir…"
     if (caldirState === "missing") return loadError + "\nClick to install"
+    if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
     if (loadError !== "") return loadError
     if (!nextMeeting) return "No upcoming meetings"
     var title = nextMeeting.title || "(Untitled)"

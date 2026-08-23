@@ -24,6 +24,13 @@ function event(start, extra = {}) {
   }
 }
 
+test("only caldir's missing-calendar response selects the setup state", () => {
+  assert.equal(Model.isNoCalendarsError("Error: No calendars found.\n\nConnect your first calendar with:\n  caldir connect <provider>"), true)
+  assert.equal(Model.isNoCalendarsError("No calendars found.\r\n\r\nConnect your first calendar with:"), true)
+  assert.equal(Model.isNoCalendarsError("No calendars found for this account"), false)
+  assert.equal(Model.isNoCalendarsError("permission denied"), false)
+})
+
 test("parseAgenda normalizes and sorts a bare caldir array", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T12:00:00+01:00", { title: "Later" }),

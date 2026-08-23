@@ -21,6 +21,13 @@ Panel {
   readonly property string caldirState: hostWidget ? hostWidget.caldirState : "checking"
   readonly property bool installingCaldir: hostWidget ? hostWidget.installingCaldir : false
   readonly property string loadError: hostWidget ? hostWidget.loadError : ""
+  readonly property bool needsCalendarSetup: hostWidget ? hostWidget.needsCalendarSetup : false
+  readonly property var connectionCommands: [
+    "caldir connect google",
+    "caldir connect icloud",
+    "caldir connect caldav",
+    "caldir connect webcal"
+  ]
   property var scheduleGroups: []
   property var next: null
   property date now: hostWidget ? hostWidget.now : new Date()
@@ -62,8 +69,11 @@ Panel {
     scheduleGroups = hostWidget.scheduleGroups || []
     next = hostWidget.nextMeeting || null
     setupItem.visible = hostWidget.caldirState !== "ready"
+    calendarSetupItem.visible = hostWidget.caldirState === "ready"
+      && hostWidget.needsCalendarSetup
     heroItem.visible = hostWidget.caldirState === "ready" && !!next
     emptyItem.visible = hostWidget.caldirState === "ready"
+      && !hostWidget.needsCalendarSetup
       && hostWidget.loadError === ""
       && scheduleGroups.length === 0
     scheduleItem.visible = hostWidget.caldirState === "ready" && scheduleGroups.length > 0
@@ -347,6 +357,86 @@ Panel {
                   horizontalPadding: Style.space(12)
                   verticalPadding: Style.space(7)
                   onClicked: root.openCaldirDocs()
+                }
+              }
+            }
+          }
+
+          Item {
+            id: calendarSetupItem
+            visible: false
+            width: parent.width
+            height: visible ? calendarSetupSurface.implicitHeight : 0
+            implicitHeight: height
+
+            BorderSurface {
+              id: calendarSetupSurface
+              width: parent.width
+              radius: Style.cornerRadius
+              color: Style.normalFillFor(root.contentForeground, Color.accent)
+              borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
+              implicitHeight: calendarSetupColumn.implicitHeight + Style.space(24)
+
+              Column {
+                id: calendarSetupColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Style.space(12)
+                anchors.rightMargin: Style.space(12)
+                spacing: Style.space(8)
+
+                Text {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  text: "󰃲"
+                  color: Color.accent
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.display
+                }
+
+                Text {
+                  width: parent.width
+                  horizontalAlignment: Text.AlignHCenter
+                  text: "No calendar found"
+                  color: root.contentForeground
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.subtitle
+                  font.bold: true
+                  wrapMode: Text.WordWrap
+                }
+
+                Text {
+                  width: parent.width
+                  horizontalAlignment: Text.AlignHCenter
+                  text: "Connect your first calendar by copying one of these commands into your terminal."
+                  color: Qt.darker(root.contentForeground, 1.35)
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.bodySmall
+                  wrapMode: Text.WordWrap
+                }
+
+                Item {
+                  width: parent.width
+                  height: Style.space(2)
+                }
+
+                Repeater {
+                  model: root.connectionCommands
+
+                  TextField {
+                    required property string modelData
+                    width: parent.width
+                    text: modelData
+                    readOnly: true
+                    selectByMouse: true
+                    foreground: root.contentForeground
+                    accent: Color.accent
+                    font.family: "monospace"
+                    font.pixelSize: Style.font.caption
+                    horizontalPadding: Style.space(10)
+                    verticalPadding: Style.space(6)
+                    onActiveFocusChanged: if (activeFocus) selectAll()
+                  }
                 }
               }
             }

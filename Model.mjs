@@ -36,3 +36,7 @@ export {
   daySectionTitle,
   truncate
 } from "./model/format.mjs"
+
+export {
+  isNoCalendarsError
+} from "./model/errors.mjs"
