@@ -41,7 +41,6 @@ Panel {
     id: navigation
     scheduleGroups: root.scheduleGroups
     nextEvent: root.next
-    inMeeting: root.inMeeting
     onOpenEventRequested: function(event) { root.openEvent(event) }
     onOpenInCalendarRequested: function(event) { root.openInCalendar(event) }
   }

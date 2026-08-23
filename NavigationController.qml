@@ -5,7 +5,6 @@ QtObject {
 
   property var scheduleGroups: []
   property var nextEvent: null
-  property bool inMeeting: false
 
   property string focusSection: "events"
   property int selectedHeroAction: 0
@@ -16,7 +15,6 @@ QtObject {
 
   onScheduleGroupsChanged: ensureSelection()
   onNextEventChanged: ensureSelection()
-  onInMeetingChanged: ensureSelection()
 
   function eventCount() {
     var count = 0
@@ -33,7 +31,7 @@ QtObject {
   }
 
   function canFocusHero() {
-    return root.inMeeting && !!root.nextEvent
+    return !!root.nextEvent
   }
 
   function ensureSelection() {
