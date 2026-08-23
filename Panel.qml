@@ -160,8 +160,9 @@ Panel {
 
           Item {
             id: headerRow
+            visible: heroItem.visible || scheduleItem.visible
             width: parent.width
-            height: Math.max(headingLabel.height, stampLabel.height, syncButton.height)
+            height: visible ? Math.max(headingLabel.height, stampLabel.height, syncButton.height) : 0
             implicitHeight: height
 
             Text {
@@ -259,9 +260,7 @@ Panel {
 
               Text {
                 width: parent.width
-                text: root.caldirState === "checking"
-                  ? "Checking for caldir…"
-                  : root.installingCaldir ? "Installing caldir…" : "Install caldir"
+                text: "Install caldir"
                 color: root.contentForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.subtitle
@@ -271,9 +270,7 @@ Panel {
 
               Text {
                 width: parent.width
-                text: root.installingCaldir
-                  ? "The official installer is running. The calendar will refresh automatically when it finishes."
-                  : "This widget needs the caldir CLI. Install it here, then follow the setup guide at caldir.org to connect your calendar."
+                text: "This widget needs the caldir CLI. Install it here, then follow the setup guide at caldir.org to connect your calendar."
                 color: Qt.darker(root.contentForeground, 1.35)
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -342,16 +339,6 @@ Panel {
                   verticalPadding: Style.space(7)
                   onClicked: root.openCaldirDocs()
                 }
-              }
-
-              Text {
-                visible: root.loadError !== "" && root.loadError !== "caldir is not installed."
-                width: parent.width
-                text: root.loadError
-                color: Color.urgent
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                wrapMode: Text.WordWrap
               }
             }
           }
