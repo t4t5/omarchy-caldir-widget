@@ -201,7 +201,7 @@ Panel {
               id: syncButton
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              iconText: root.syncing ? "" : ""
+              iconText: ""
               tooltipText: root.syncing ? "Syncing calendar…" : "Sync now"
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
@@ -210,15 +210,24 @@ Panel {
               opacity: root.syncing ? 0.6 : 1.0
               onClicked: root.syncNow()
 
-              RotationAnimation on rotation {
-                from: 0
-                to: 360
-                duration: 900
-                loops: Animation.Infinite
-                running: root.syncing
-              }
+              Text {
+                id: syncIcon
+                anchors.centerIn: parent
+                text: root.syncing ? "" : ""
+                color: syncButton.foreground
+                font.family: syncButton.fontFamily
+                font.pixelSize: syncButton.fontSize
 
-              onRotationChanged: if (!root.syncing && rotation !== 0) rotation = 0
+                RotationAnimation on rotation {
+                  from: 0
+                  to: 360
+                  duration: 900
+                  loops: Animation.Infinite
+                  running: root.syncing
+                }
+
+                onRotationChanged: if (!root.syncing && rotation !== 0) rotation = 0
+              }
             }
           }
 
