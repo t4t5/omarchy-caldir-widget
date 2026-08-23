@@ -460,7 +460,7 @@ Panel {
                       var parts = []
                       var duration = root.next ? Model.formatDuration(root.next.startMs, root.next.endMs) : ""
                       if (duration) parts.push(duration)
-                      parts.push("  Meet")
+                      parts.push("  " + Model.conferenceName(root.next ? root.next.conferenceUrl : ""))
                       return parts.join("  ·  ")
                     }
                     color: root.inMeeting ? Color.accent : Qt.darker(root.contentForeground, 1.4)

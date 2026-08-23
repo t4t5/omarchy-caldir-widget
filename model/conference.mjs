@@ -67,14 +67,14 @@ function unwrapWrappedLinks(value) {
 // Initial provider catalogue ported from MeetingBar's MeetingLinkDetector.
 // Keep these as separate expressions: it makes adding providers less risky
 // than growing one large expression whose alternatives can shadow each other.
-const VIDEO_LINK_PATTERNS = [
-  /https?:\/\/meet\.google\.com\/[_a-z0-9-]+/gi,
-  /https:\/\/(?:[a-z0-9-.]+)?zoom(?:-x)?\.(?:us|com|com\.cn|de)\/(?:my|[a-z]{1,2}|webinar)\/[-a-z0-9()@:%_+.~#?&=/]*/gi,
-  /https?:\/\/(?:(?:gov\.)?teams\.microsoft\.(?:com|us)|teams\.live\.com)\/(?:l\/meetup-join\/[a-z0-9_%/=+.?-]+(?:&[^\s"'<>]+)?|meet\/\d+\?p=[a-z0-9_-]+(?:&[^\s"'<>]+)?)/gi,
-  /https?:\/\/(?:[a-z0-9-]+\.)?webex\.com(?:(?:\/[-a-z0-9]+\/j\.php\?MTID=[a-z0-9]+(?:&[^\s"'<>]*)?)|(?:\/(?:meet|join)\/[-a-z0-9._@]+(?:\?[^\s"'<>]*)?))/gi,
-  /https?:\/\/meet\.jit\.si\/[^\s"'<>]*/gi,
-  /https?:\/\/whereby\.com\/[^\s"'<>]*/gi,
-  /https?:\/\/meet\.proton\.me\/[^\s"'<>]*/gi
+const VIDEO_PROVIDERS = [
+  { name: "Google Meet", pattern: /https?:\/\/meet\.google\.com\/[_a-z0-9-]+/gi },
+  { name: "Zoom", pattern: /https:\/\/(?:[a-z0-9-.]+)?zoom(?:-x)?\.(?:us|com|com\.cn|de)\/(?:my|[a-z]{1,2}|webinar)\/[-a-z0-9()@:%_+.~#?&=/]*/gi },
+  { name: "Microsoft Teams", pattern: /https?:\/\/(?:(?:gov\.)?teams\.microsoft\.(?:com|us)|teams\.live\.com)\/(?:l\/meetup-join\/[a-z0-9_%/=+.?-]+(?:&[^\s"'<>]+)?|meet\/\d+\?p=[a-z0-9_-]+(?:&[^\s"'<>]+)?)/gi },
+  { name: "Webex", pattern: /https?:\/\/(?:[a-z0-9-]+\.)?webex\.com(?:(?:\/[-a-z0-9]+\/j\.php\?MTID=[a-z0-9]+(?:&[^\s"'<>]*)?)|(?:\/(?:meet|join)\/[-a-z0-9._@]+(?:\?[^\s"'<>]*)?))/gi },
+  { name: "Jitsi", pattern: /https?:\/\/meet\.jit\.si\/[^\s"'<>]*/gi },
+  { name: "Whereby", pattern: /https?:\/\/whereby\.com\/[^\s"'<>]*/gi },
+  { name: "Proton Meet", pattern: /https?:\/\/meet\.proton\.me\/[^\s"'<>]*/gi }
 ]
 
 // Provider-owned conference properties are authoritative. Their order mirrors
@@ -107,8 +107,8 @@ export function findVideoUrl(value) {
   const haystack = unwrapWrappedLinks(value)
   if (haystack.indexOf("://") === -1) return ""
   let best = ""
-  for (let i = 0; i < VIDEO_LINK_PATTERNS.length; i++) {
-    const pattern = VIDEO_LINK_PATTERNS[i]
+  for (let i = 0; i < VIDEO_PROVIDERS.length; i++) {
+    const pattern = VIDEO_PROVIDERS[i].pattern
     pattern.lastIndex = 0
     let match
     while ((match = pattern.exec(haystack)) !== null) {
@@ -116,6 +116,16 @@ export function findVideoUrl(value) {
     }
   }
   return best
+}
+
+export function conferenceName(value) {
+  const haystack = unwrapWrappedLinks(value)
+  for (let i = 0; i < VIDEO_PROVIDERS.length; i++) {
+    const provider = VIDEO_PROVIDERS[i]
+    provider.pattern.lastIndex = 0
+    if (provider.pattern.test(haystack)) return provider.name
+  }
+  return "Meeting"
 }
 
 export function getConferenceUrl(event) {

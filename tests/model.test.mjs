@@ -140,6 +140,24 @@ test("findVideoUrl detects the supported video providers", () => {
   }
 })
 
+test("conferenceName identifies supported providers and falls back generically", () => {
+  const cases = [
+    ["Google Meet", "https://meet.google.com/abc-defg-hij"],
+    ["Zoom", "https://us02web.zoom.us/j/123456789?pwd=secret"],
+    ["Microsoft Teams", "https://teams.microsoft.com/l/meetup-join/19%3ameeting_example?context=abc"],
+    ["Webex", "https://example.webex.com/meet/alice.smith"],
+    ["Jitsi", "https://meet.jit.si/team-standup"],
+    ["Whereby", "https://whereby.com/team-room"],
+    ["Proton Meet", "https://meet.proton.me/team-room#key"]
+  ]
+
+  for (const [name, url] of cases) {
+    assert.equal(Model.conferenceName(url), name)
+  }
+  assert.equal(Model.conferenceName("https://calls.example.com/team-room"), "Meeting")
+  assert.equal(Model.conferenceName(""), "Meeting")
+})
+
 test("meet links survive Google redirect and Outlook SafeLinks wrappers", () => {
   const redirect = "https://www.google.com/url?q=https%3A%2F%2Fmeet.google.com%2Fabc-defg-hij&sa=D&source=calendar"
   assert.equal(Model.findVideoUrl(redirect), "https://meet.google.com/abc-defg-hij")

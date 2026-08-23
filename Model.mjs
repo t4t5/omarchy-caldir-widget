@@ -8,7 +8,8 @@ export {
 
 export {
   findVideoUrl,
-  getConferenceUrl
+  getConferenceUrl,
+  conferenceName
 } from "./model/conference.mjs"
 
 export {
