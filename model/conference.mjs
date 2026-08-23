@@ -54,7 +54,7 @@ function rewriteGoogleRedirects(input) {
   return result === input ? null : result
 }
 
-export function unwrapWrappedLinks(value) {
+function unwrapWrappedLinks(value) {
   let current = unwrapSafeLinks(text(value))
   for (let pass = 0; pass < MAX_UNWRAP_PASSES; pass++) {
     const rewritten = rewriteGoogleRedirects(current)
@@ -117,9 +117,6 @@ export function findVideoUrl(value) {
   }
   return best
 }
-
-// Compatibility alias for custom imports.
-export const findMeetUrl = findVideoUrl
 
 export function getConferenceUrl(event) {
   const source = event && typeof event === "object" ? event : {}

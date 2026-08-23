@@ -1,4 +1,3 @@
-import { localDateKey } from "./dates.mjs"
 import { getConferenceUrl } from "./conference.mjs"
 
 function text(value) {
@@ -43,10 +42,7 @@ export function normalizedEvent(raw) {
   event.recurring = raw.recurring === true
   event.startMs = startMs
   event.endMs = endMs
-  event.dayKey = localDateKey(new Date(startMs))
   event.conferenceUrl = getConferenceUrl(event)
-  delete event.videoUrl
-  delete event.meetUrl
   return event
 }
 

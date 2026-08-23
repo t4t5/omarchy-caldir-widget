@@ -1,8 +1,6 @@
 // Stable public API shared by QML and the dependency-free Node test suite.
 export {
   MINUTE_MS,
-  HOUR_MS,
-  DAY_MS,
   localDateKey,
   addLocalDays,
   queryRange
@@ -10,9 +8,7 @@ export {
 
 export {
   findVideoUrl,
-  findMeetUrl,
-  getConferenceUrl,
-  unwrapWrappedLinks
+  getConferenceUrl
 } from "./model/conference.mjs"
 
 export {
@@ -22,7 +18,6 @@ export {
 
 export {
   nextMeeting,
-  buildUpcoming,
   buildScheduleGroups
 } from "./model/select.mjs"
 
@@ -33,8 +28,6 @@ export {
   formatDuration,
   hm,
   timeRange,
-  daySectionTitle,
-  daySectionDate,
   truncate
 } from "./model/format.mjs"
 

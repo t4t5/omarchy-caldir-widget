@@ -53,7 +53,7 @@ function occupiedLocalDays(event, rangeStart, rangeEnd) {
   return days
 }
 
-export function buildUpcoming(events, now, options) {
+function buildUpcoming(events, now, options) {
   const config = options || {}
   const lookaheadDays = Math.max(1, parseInt(config.lookaheadDays, 10) || 3)
   const showOnlyWithVideoLink = config.showOnlyWithVideoLink !== false

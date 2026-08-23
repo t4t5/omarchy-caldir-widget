@@ -12,16 +12,11 @@ BarWidget {
   id: root
   moduleName: "omarchy-caldir"
 
-  readonly property int daysAhead: Math.max(1, Math.min(30, Number(setting("daysAhead", 3)) || 3))
+  // The manifest schema types and bounds these; the model clamps its own inputs.
+  readonly property int daysAhead: setting("daysAhead", 3)
   readonly property string calendarSlug: String(setting("calendar", "") || "").trim()
-  readonly property int maxTitleLength: Math.max(8, Math.min(80, Number(setting("maxTitleLength", 28)) || 28))
-  readonly property bool showOnlyWithVideoLink: {
-    var value = setting("showOnlyWithVideoLink", true)
-    if (value === undefined || value === null) return true
-    if (value === true || value === 1 || value === "1") return true
-    if (value === false || value === 0 || value === "0") return false
-    return String(value).toLowerCase() !== "false"
-  }
+  readonly property int maxTitleLength: setting("maxTitleLength", 28)
+  readonly property bool showOnlyWithVideoLink: setting("showOnlyWithVideoLink", true) === true
 
   property var scheduleGroups: []
   property var nextMeeting: null

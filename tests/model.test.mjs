@@ -47,7 +47,6 @@ test("parseAgenda normalizes and sorts a bare caldir array", () => {
 
   assert.deepEqual(parsed.map(item => item.title), ["Soon", "Later"])
   assert.equal(parsed[0].location, "")
-  assert.equal(parsed[0].dayKey, "2026-08-19")
   assert.equal(parsed[0].startMs, Date.parse("2026-08-19T11:00:00+01:00"))
 })
 
@@ -76,9 +75,7 @@ test("normalized events expose one conference URL", () => {
   const zoomUrl = "https://us02web.zoom.us/j/123456789?pwd=unchanged"
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T11:00:00+01:00", {
-      location: "Room · https://meet.google.com/abc-defg-hij",
-      meetUrl: "legacy-meet-url",
-      videoUrl: "legacy-video-url"
+      location: "Room · https://meet.google.com/abc-defg-hij"
     }),
     event("2026-08-19T12:00:00+01:00", { description: "Join HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg." }),
     event("2026-08-19T13:00:00+01:00", { location: zoomUrl })
@@ -86,8 +83,6 @@ test("normalized events expose one conference URL", () => {
   assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/abc-defg-hij")
   assert.equal(parsed[1].conferenceUrl, "HTTPS://MEET.GOOGLE.COM/xyz-abcd-efg")
   assert.equal(parsed[2].conferenceUrl, zoomUrl)
-  assert.equal("meetUrl" in parsed[0], false)
-  assert.equal("videoUrl" in parsed[0], false)
   assert.equal(Model.findVideoUrl("not a call"), "")
 })
 
@@ -153,13 +148,13 @@ test("findVideoUrl detects the supported video providers", () => {
 
 test("meet links survive Google redirect and Outlook SafeLinks wrappers", () => {
   const redirect = "https://www.google.com/url?q=https%3A%2F%2Fmeet.google.com%2Fabc-defg-hij&sa=D&source=calendar"
-  assert.equal(Model.findMeetUrl(redirect), "https://meet.google.com/abc-defg-hij")
+  assert.equal(Model.findVideoUrl(redirect), "https://meet.google.com/abc-defg-hij")
 
   const safeLink = "https://eur01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmeet.google.com%2Fklm-nopq-rst&data=05%7C01"
-  assert.equal(Model.findMeetUrl(safeLink), "https://meet.google.com/klm-nopq-rst")
+  assert.equal(Model.findVideoUrl(safeLink), "https://meet.google.com/klm-nopq-rst")
 
   const nested = "https://www.google.com/url?q=" + encodeURIComponent(redirect)
-  assert.equal(Model.findMeetUrl(nested), "https://meet.google.com/abc-defg-hij")
+  assert.equal(Model.findVideoUrl(nested), "https://meet.google.com/abc-defg-hij")
 })
 
 test("a Zoom link survives an Outlook SafeLinks wrapper", () => {
@@ -170,7 +165,7 @@ test("a Zoom link survives an Outlook SafeLinks wrapper", () => {
 
 test("a malformed redirect escape never blocks later links", () => {
   const mixed = "https://www.google.com/url?q=%ZZbroken and https://www.google.com/url?q=https%3A%2F%2Fmeet.google.com%2Fabc-defg-hij"
-  assert.equal(Model.findMeetUrl(mixed), "https://meet.google.com/abc-defg-hij")
+  assert.equal(Model.findVideoUrl(mixed), "https://meet.google.com/abc-defg-hij")
 })
 
 test("location outranks description and the longest match wins per source", () => {
@@ -183,7 +178,7 @@ test("location outranks description and the longest match wins per source", () =
   assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/abc")
 
   const both = "https://meet.google.com/abc then https://meet.google.com/abc-defg-hij"
-  assert.equal(Model.findMeetUrl(both), "https://meet.google.com/abc-defg-hij")
+  assert.equal(Model.findVideoUrl(both), "https://meet.google.com/abc-defg-hij")
 })
 
 test("nextMeeting chooses an ongoing call before future calls", () => {
@@ -290,10 +285,6 @@ test("cancelled and declined events stay off the bar but keep their schedule slo
   ]))
 
   assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadDays: 3 }).title, "Confirmed")
-  assert.deepEqual(
-    Model.buildUpcoming(parsed, NOW, { lookaheadDays: 3 }).map(item => item.title),
-    ["Confirmed"]
-  )
 
   const groups = Model.buildScheduleGroups(parsed, NOW, { lookaheadDays: 3, maxRows: 20 })
   assert.deepEqual(groups[0].items.map(item => item.title), ["Cancelled", "Declined", "Confirmed"])
