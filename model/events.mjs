@@ -19,31 +19,35 @@ export function normalizedEvent(raw) {
 
   const parsedEndMs = Date.parse(raw.end)
   const endMs = isNaN(parsedEndMs) ? startMs : Math.max(startMs, parsedEndMs)
-  const event = {}
-  for (const key in raw) event[key] = raw[key]
+  const location = text(raw.location)
+  const description = text(raw.description)
+  const conferenceUrl = getConferenceUrl({
+    url: text(raw.url),
+    location,
+    description,
+    x_properties: Array.isArray(raw.x_properties) ? raw.x_properties : []
+  })
 
-  event.instance_id = text(raw.instance_id)
-  event.uid = text(raw.uid)
-  event.calendar = text(raw.calendar)
-  event.title = text(raw.title).trim() || "Untitled event"
-  event.all_day = raw.all_day === true
-  event.start = text(raw.start)
-  event.end = text(raw.end)
-  event.tzid = text(raw.tzid)
-  event.location = text(raw.location)
-  event.description = text(raw.description)
-  event.url = text(raw.url)
-  event.x_properties = Array.isArray(raw.x_properties) ? raw.x_properties : []
-  event.status = status
-  event.rsvp = rsvp
-  event.cancelled = status === "cancelled"
-  event.declined = rsvp === "declined"
-  event.tentative = rsvp === "tentative" || rsvp === "needs-action"
-  event.recurring = raw.recurring === true
-  event.startMs = startMs
-  event.endMs = endMs
-  event.conferenceUrl = getConferenceUrl(event)
-  return event
+  return {
+    instance_id: text(raw.instance_id),
+    uid: text(raw.uid),
+    calendar: text(raw.calendar),
+    title: text(raw.title).trim() || "Untitled event",
+    all_day: raw.all_day === true,
+    start: text(raw.start),
+    end: text(raw.end),
+    location,
+    description,
+    status,
+    rsvp,
+    cancelled: status === "cancelled",
+    declined: rsvp === "declined",
+    tentative: rsvp === "tentative" || rsvp === "needs-action",
+    recurring: raw.recurring === true,
+    startMs,
+    endMs,
+    conferenceUrl
+  }
 }
 
 // Start ascending, longest first on ties, then title. This is the only sort in

@@ -461,7 +461,7 @@ Panel {
                       var parts = []
                       var duration = root.next ? Model.formatDuration(root.next.startMs, root.next.endMs) : ""
                       if (duration) parts.push(duration)
-                      if (root.next) parts.push(root.next.conferenceUrl ? "  Meet" : "󰃯  Event")
+                      parts.push("  Meet")
                       return parts.join("  ·  ")
                     }
                     color: root.inMeeting ? Color.accent : Qt.darker(root.contentForeground, 1.4)
@@ -493,16 +493,6 @@ Panel {
                   wrapMode: Text.WordWrap
                 }
 
-                Text {
-                  visible: !!(root.next && root.next.location && !root.next.conferenceUrl)
-                  width: parent.width
-                  text: root.next ? root.next.location : ""
-                  color: Qt.darker(root.contentForeground, 1.45)
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.caption
-                  wrapMode: Text.WordWrap
-                }
-
                 RowLayout {
                   width: parent.width
                   spacing: Style.space(8)
@@ -511,7 +501,6 @@ Panel {
                     id: joinButton
                     readonly property bool keyboardFocused: navigation.focusSection === "hero"
                       && navigation.selectedHeroAction === 0
-                    visible: !!(root.next && root.next.conferenceUrl)
                     Layout.fillWidth: true
                     text: "Join Meeting"
                     iconText: ""

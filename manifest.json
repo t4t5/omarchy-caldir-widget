@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "Omarchy Caldir Widget",
-    "description": "Shows the next event in the bar and a schedule on click",
+    "description": "Shows the next meeting in the bar and a schedule on click",
     "category": "Productivity",
     "allowMultiple": false,
     "defaultSection": "right",

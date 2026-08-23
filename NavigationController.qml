@@ -33,8 +33,7 @@ QtObject {
   }
 
   function heroActionAvailable(action) {
-    if (!root.inMeeting || !root.nextEvent) return false
-    return action === 0 ? !!root.nextEvent.conferenceUrl : action === 1
+    return root.inMeeting && !!root.nextEvent && (action === 0 || action === 1)
   }
 
   function canFocusHero() {

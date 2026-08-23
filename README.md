@@ -68,10 +68,9 @@ just uninstall
 - Middle-click runs `caldir pull` and refreshes local data when it finishes.
 - The sync button and the `s` keyboard shortcut while the panel is open do the
   same. Automatic refreshes only re-read local caldir data with `caldir events`.
-- During a meeting, keyboard focus starts on Join Meeting (or Open in Calendar
-  when no join link exists). Left/Right or `h`/`l` switches between
-  the hero actions, while Up/Down or `j`/`k` moves between the hero and
-  schedule events. Enter activates the focused action.
+- During a meeting, keyboard focus starts on Join Meeting. Left/Right or
+  `h`/`l` switches between the hero actions, while Up/Down or `j`/`k` moves
+  between the hero and schedule events. Enter activates the focused action.
 - Escape closes the popup; Tab switches panels.
 
 Failed commands and malformed responses clear the current schedule and show
