@@ -167,16 +167,7 @@ BarWidget {
     return {
       "EVENT_UID": eventValue(event.uid),
       "EVENT_INSTANCE_ID": eventValue(event.instance_id),
-      "EVENT_CALENDAR": eventValue(event.calendar),
       "EVENT_TITLE": eventValue(event.title),
-      "EVENT_START": eventValue(event.start),
-      "EVENT_END": eventValue(event.end),
-      "EVENT_ALL_DAY": event && event.all_day === true ? "1" : "0",
-      "EVENT_RECURRING": event && event.recurring === true ? "1" : "0",
-      "EVENT_LOCATION": eventValue(event.location),
-      "EVENT_DESCRIPTION": eventValue(event.description),
-      "EVENT_STATUS": eventValue(event.status).toLowerCase(),
-      "EVENT_RSVP": eventValue(event.rsvp).toLowerCase(),
       "EVENT_CONFERENCE_URL": eventValue(event.conferenceUrl)
     }
   }

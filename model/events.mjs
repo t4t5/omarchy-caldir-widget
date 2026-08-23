@@ -14,7 +14,6 @@ export function normalizedEvent(raw) {
   const startMs = Date.parse(raw.start)
   if (isNaN(startMs)) return null
 
-  const status = lower(raw.status)
   const rsvp = lower(raw.rsvp)
 
   const parsedEndMs = Date.parse(raw.end)
@@ -38,7 +37,6 @@ export function normalizedEvent(raw) {
     end: text(raw.end),
     location,
     description,
-    status,
     rsvp,
     declined: rsvp === "declined",
     tentative: rsvp === "tentative" || rsvp === "needs-action",

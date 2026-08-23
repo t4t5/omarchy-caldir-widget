@@ -17,7 +17,6 @@ function event(start, extra = {}) {
     end: isNaN(startMs) ? "not-a-date" : new Date(startMs + 30 * Model.MINUTE_MS).toISOString(),
     location: "",
     description: "",
-    status: "confirmed",
     rsvp: "accepted",
     recurring: false,
     ...extra

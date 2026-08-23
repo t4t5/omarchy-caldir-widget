@@ -113,36 +113,25 @@ If `xdg-open` rejects a rencal deeplink, the handler exits with an error. It
 does not guess at a calendar provider or open a web-calendar fallback. Install
 rencal, or set `openScript` when a different policy is wanted.
 
-The event is passed as environment variables, so invite text is never parsed
-as shell syntax:
+Custom handlers receive the action as their first argument and four event
+values in the environment, so event text is never parsed as shell syntax:
 
 | Variable | Value |
 | --- | --- |
 | `EVENT_UID` | Event UID |
 | `EVENT_INSTANCE_ID` | Instance ID; recurring instances use `<uid>__<recurrence-id>` |
-| `EVENT_CALENDAR` | caldir calendar slug |
 | `EVENT_TITLE` | Event title |
-| `EVENT_START`, `EVENT_END` | Raw caldir RFC 3339 or date values |
-| `EVENT_ALL_DAY`, `EVENT_RECURRING` | `1` or `0` |
-| `EVENT_LOCATION`, `EVENT_DESCRIPTION` | Raw event text |
-| `EVENT_STATUS`, `EVENT_RSVP` | Normalized lowercase values |
 | `EVENT_CONFERENCE_URL` | Detected, unwrapped video URL, unchanged by the widget |
 
-To customize the policy, copy [`bin/open-event`](bin/open-event) to a stable
+To add custom behavior, copy [`bin/open-event`](bin/open-event) to a stable
 location, make it executable, edit it, and set `openScript` to the copy's
-absolute path. For example, a custom handler can make an explicit choice to
-search a user-selected web calendar for non-video events. Replace the example
-base URL with an endpoint supported by your calendar:
+absolute path. For example, insert this immediately before the copied
+handler launches `xdg-open` to start transcription before joining a meeting:
 
 ```bash
-action="${1:-auto}"
-if [[ "$action" == "join" || ( "$action" == "auto" && -n "${EVENT_CONFERENCE_URL:-}" ) ]]; then
-  exec xdg-open "${EVENT_CONFERENCE_URL:?join requested without a video URL}"
+if [[ "$resolved_action" == "join" ]]; then
+  start-transcription --title "${EVENT_TITLE:-Meeting}"
 fi
-
-# Reuse the bundled handler's urlencode helper.
-query="$(urlencode "${EVENT_TITLE:-${EVENT_UID:-}}")"
-exec xdg-open "https://calendar.example.net/search?q=$query"
 ```
 
 The bundled handler also supports `--print` for testing. It prints the
