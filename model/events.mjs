@@ -40,7 +40,6 @@ export function normalizedEvent(raw) {
     description,
     status,
     rsvp,
-    cancelled: status === "cancelled",
     declined: rsvp === "declined",
     tentative: rsvp === "tentative" || rsvp === "needs-action",
     recurring: raw.recurring === true,

@@ -74,8 +74,8 @@ just uninstall
 - Escape closes the popup; Tab switches panels.
 
 Failed commands and malformed responses clear the current schedule and show
-the error in the panel. Cancelled events and declined invitations stay in the
-schedule with a strikethrough, but never drive the bar. Tentative and
+the error in the panel. Declined invitations stay in the schedule with a
+strikethrough, but never drive the bar. Tentative and
 unanswered invitations stay in the schedule, shown dimmed and italic, but never
 drive the bar. The schedule includes all events, while the bar and next-meeting
 hero only follow events with a supported video URL. Multi-day events appear on

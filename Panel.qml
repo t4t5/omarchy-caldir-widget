@@ -666,7 +666,7 @@ Panel {
                         readonly property var meeting: modelData
                         readonly property int navigationIndex: navigation.eventOffset(groupItem.index) + index
                         readonly property bool ended: Number(modelData.endMs) <= root.now.getTime()
-                        readonly property bool cancelledOrDeclined: modelData.cancelled === true || modelData.declined === true
+                        readonly property bool declined: modelData.declined === true
                         readonly property bool tentative: modelData.tentative === true
                         width: parent.width
                         hasCursor: navigationIndex === navigation.selectedEventIndex
@@ -718,7 +718,7 @@ Panel {
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.body
                             font.italic: eventRow.tentative
-                            font.strikeout: eventRow.cancelledOrDeclined
+                            font.strikeout: eventRow.declined
                             elide: Text.ElideRight
                             maximumLineCount: 1
                           }
