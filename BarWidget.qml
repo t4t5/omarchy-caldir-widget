@@ -31,11 +31,14 @@ BarWidget {
   property var nextMeeting: null
   property string loadError: ""
   property bool configured: false
+  property string caldirState: "checking"
+  property string caldirExecutable: ""
   property bool refreshQueued: false
   property date lastUpdated: new Date(0)
   property date now: new Date()
 
   readonly property bool syncing: pullProcess.running
+  readonly property bool installingCaldir: installProcess.running
   readonly property bool lastFetchFailed: loadError !== ""
   readonly property bool inMeeting: nextMeeting
     && now.getTime() >= Number(nextMeeting.startMs)
@@ -50,7 +53,7 @@ BarWidget {
   function agendaCommand() {
     var range = Model.queryRange(new Date(), daysAhead)
     var command = [
-      "caldir", "events", "--json",
+      caldirExecutable, "events", "--json",
       "--from", range.from,
       "--to", range.to
     ]
@@ -59,12 +62,60 @@ BarWidget {
   }
 
   function refresh() {
-    if (agendaProcess.running) {
+    if (caldirCheckProcess.running || agendaProcess.running) {
       refreshQueued = true
       return
     }
+    caldirCheckProcess.command = ["which", "caldir"]
+    caldirCheckProcess.running = true
+    meetingDataChanged()
+  }
+
+  function finishCaldirCheck(exitCode) {
+    var executable = String(caldirCheckStdout.text || "").trim()
+    if (exitCode !== 0 || executable === "") {
+      var wasMissing = caldirState === "missing"
+      caldirState = "missing"
+      caldirExecutable = ""
+      if (!wasMissing || loadError === "") loadError = "caldir is not installed."
+      refreshQueued = false
+      meetingDataChanged()
+      return
+    }
+
+    caldirState = "ready"
+    caldirExecutable = executable
+    loadError = ""
     agendaProcess.command = agendaCommand()
     agendaProcess.running = true
+  }
+
+  function installCaldir() {
+    if (installProcess.running) return
+    caldirState = "installing"
+    loadError = ""
+    installProcess.command = [
+      "bash", "-lc",
+      "set -o pipefail; curl -sSf https://caldir.org/install.sh | sh"
+    ]
+    installProcess.running = true
+    meetingDataChanged()
+  }
+
+  function finishInstall(exitCode) {
+    if (exitCode !== 0) {
+      var stderr = String(installStderr.text || "").trim()
+      var stdout = String(installStdout.text || "").trim()
+      var detail = Model.truncate(stderr !== "" ? stderr : stdout, 320)
+      caldirState = "missing"
+      loadError = detail !== ""
+        ? "Installation failed: " + detail
+        : "Installation failed. Visit caldir.org for manual setup instructions."
+      meetingDataChanged()
+      return
+    }
+    caldirState = "checking"
+    Qt.callLater(root.refresh)
   }
 
   function finishRefresh(exitCode) {
@@ -113,8 +164,12 @@ BarWidget {
 
   function pull() {
     if (pullProcess.running) return
+    if (caldirState !== "ready" || caldirExecutable === "") {
+      refresh()
+      return
+    }
     loadError = ""
-    pullProcess.command = ["caldir", "pull"]
+    pullProcess.command = [caldirExecutable, "pull"]
     pullProcess.running = true
     meetingDataChanged()
   }
@@ -235,6 +290,16 @@ BarWidget {
   }
 
   Process {
+    id: caldirCheckProcess
+    running: false
+    stdout: StdioCollector {
+      id: caldirCheckStdout
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishCaldirCheck(exitCode) }
+  }
+
+  Process {
     id: agendaProcess
     running: false
     stdout: StdioCollector {
@@ -246,6 +311,20 @@ BarWidget {
       waitForEnd: true
     }
     onExited: function(exitCode) { root.finishRefresh(exitCode) }
+  }
+
+  Process {
+    id: installProcess
+    running: false
+    stdout: StdioCollector {
+      id: installStdout
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: installStderr
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishInstall(exitCode) }
   }
 
   Process {
@@ -335,6 +414,9 @@ BarWidget {
   }
 
   readonly property string tooltipLine: {
+    if (caldirState === "checking") return "Checking for caldir…"
+    if (caldirState === "installing") return "Installing caldir…"
+    if (caldirState === "missing") return loadError + "\nClick to install"
     if (!configured && loadError !== "") return loadError + "\nClick for setup help"
     if (!nextMeeting) return "No upcoming meetings" + (loadError !== "" ? "\n" + loadError : "")
     var title = nextMeeting.title || "(Untitled)"

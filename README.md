@@ -17,10 +17,15 @@ separate through `caldir pull`.
 Check the data source before installing:
 
 ```sh
-caldir add
-caldir pull
+curl -sSf https://caldir.org/install.sh | sh
+caldir connect
+caldir sync
 caldir events --json --from 2026-08-19 --to 2026-08-22
 ```
+
+If `caldir` is missing, opening the widget offers to run the official installer
+and links to [caldir.org](https://caldir.org) for provider setup. Installation
+only starts after clicking **Install caldir**.
 
 ## Install
 

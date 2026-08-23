@@ -18,6 +18,8 @@ Panel {
 
   readonly property bool inMeeting: hostWidget ? hostWidget.inMeeting : false
   readonly property bool syncing: hostWidget ? hostWidget.syncing : false
+  readonly property string caldirState: hostWidget ? hostWidget.caldirState : "checking"
+  readonly property bool installingCaldir: hostWidget ? hostWidget.installingCaldir : false
   readonly property string loadError: hostWidget ? hostWidget.loadError : ""
   property var scheduleGroups: []
   property var next: null
@@ -59,10 +61,10 @@ Panel {
     if (!hostWidget) return
     scheduleGroups = hostWidget.scheduleGroups || []
     next = hostWidget.nextMeeting || null
-    setupItem.visible = !hostWidget.configured && !hostWidget.syncing && hostWidget.loadError !== ""
-    heroItem.visible = hostWidget.configured && !!next
-    emptyItem.visible = hostWidget.configured && scheduleGroups.length === 0
-    scheduleItem.visible = hostWidget.configured && scheduleGroups.length > 0
+    setupItem.visible = hostWidget.caldirState !== "ready"
+    heroItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && !!next
+    emptyItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && scheduleGroups.length === 0
+    scheduleItem.visible = hostWidget.caldirState === "ready" && hostWidget.configured && scheduleGroups.length > 0
     navigation.ensureSelection()
   }
 
@@ -96,6 +98,14 @@ Panel {
 
   function syncNow() {
     if (hostWidget) hostWidget.pull()
+  }
+
+  function installCaldir() {
+    if (hostWidget) hostWidget.installCaldir()
+  }
+
+  function openCaldirDocs() {
+    Quickshell.execDetached(["xdg-open", "https://caldir.org"])
   }
 
   onHostWidgetChanged: Qt.callLater(root.reload)
@@ -168,10 +178,13 @@ Panel {
 
             Text {
               id: stampLabel
-              anchors.right: syncButton.left
-              anchors.rightMargin: Style.space(8)
+              anchors.right: syncButton.visible ? syncButton.left : parent.right
+              anchors.rightMargin: syncButton.visible ? Style.space(8) : 0
               anchors.verticalCenter: parent.verticalCenter
               text: {
+                if (root.installingCaldir) return "Installing…"
+                if (root.caldirState === "checking") return "Checking…"
+                if (root.caldirState === "missing") return "Not installed"
                 if (root.syncing) return "Syncing…"
                 if (root.loadError !== "") return root.hostWidget && root.hostWidget.configured ? "Update failed · Cached" : "Unavailable"
                 if (root.hostWidget && root.hostWidget.configured)
@@ -191,6 +204,7 @@ Panel {
               tooltipText: root.syncing ? "Syncing calendar…" : "Sync now"
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
+              visible: root.caldirState === "ready"
               enabled: !root.syncing
               opacity: root.syncing ? 0.6 : 1.0
               onClicked: root.syncNow()
@@ -245,7 +259,9 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "Set up caldir"
+                text: root.caldirState === "checking"
+                  ? "Checking for caldir…"
+                  : root.installingCaldir ? "Installing caldir…" : "Install caldir"
                 color: root.contentForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.subtitle
@@ -255,7 +271,9 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "Omarchy Caldir Widget reads calendars already configured in caldir. Install caldir, add a calendar, then pull it once:"
+                text: root.installingCaldir
+                  ? "The official installer is running. The calendar will refresh automatically when it finishes."
+                  : "This widget needs the caldir CLI. Install it here, then follow the setup guide at caldir.org to connect your calendar."
                 color: Qt.darker(root.contentForeground, 1.35)
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -279,7 +297,7 @@ Panel {
 
                   Text {
                     width: parent.width
-                    text: "caldir add\ncaldir pull\ncaldir events --json"
+                    text: "curl -sSf https://caldir.org/install.sh | sh"
                     font.family: "monospace"
                     font.pixelSize: Style.font.caption
                     color: root.contentForeground
@@ -288,7 +306,46 @@ Panel {
                 }
               }
 
+              RowLayout {
+                visible: root.caldirState !== "checking"
+                width: parent.width
+                spacing: Style.space(8)
+
+                Button {
+                  Layout.fillWidth: true
+                  text: root.installingCaldir ? "Installing…" : "Install caldir"
+                  iconText: root.installingCaldir ? "" : ""
+                  iconSpinning: root.installingCaldir
+                  selected: true
+                  enabled: !root.installingCaldir
+                  foreground: root.contentForeground
+                  accent: Color.accent
+                  fontFamily: root.contentFontFamily
+                  fontSize: Style.font.bodySmall
+                  iconSize: Style.font.bodySmall
+                  horizontalPadding: Style.space(12)
+                  verticalPadding: Style.space(7)
+                  onClicked: root.installCaldir()
+                }
+
+                Button {
+                  Layout.fillWidth: true
+                  text: "View docs"
+                  iconText: ""
+                  bordered: true
+                  foreground: root.contentForeground
+                  accent: Color.accent
+                  fontFamily: root.contentFontFamily
+                  fontSize: Style.font.bodySmall
+                  iconSize: Style.font.bodySmall
+                  horizontalPadding: Style.space(12)
+                  verticalPadding: Style.space(7)
+                  onClicked: root.openCaldirDocs()
+                }
+              }
+
               Text {
+                visible: root.loadError !== "" && root.loadError !== "caldir is not installed."
                 width: parent.width
                 text: root.loadError
                 color: Color.urgent
