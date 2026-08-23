@@ -29,6 +29,7 @@ BarWidget {
   property bool needsCalendarSetup: false
   property string caldirState: "checking"
   property string caldirExecutable: ""
+  property string failedAgendaError: ""
   property date now: new Date()
 
   readonly property bool syncing: pullProcess.running
@@ -55,7 +56,7 @@ BarWidget {
   }
 
   function refresh() {
-    if (caldirCheckProcess.running || agendaProcess.running) return
+    if (caldirCheckProcess.running || agendaProcess.running || versionCheckProcess.running) return
     caldirCheckProcess.command = ["which", "caldir"]
     caldirCheckProcess.running = true
     meetingDataChanged()
@@ -117,10 +118,10 @@ BarWidget {
       if (needsCalendarSetup) {
         loadError = ""
       } else {
-        var detail = Model.truncate(stderr, 320)
-        loadError = detail !== ""
-          ? "caldir failed: " + detail
-          : "Could not run caldir. Install it, then run caldir add and caldir pull."
+        failedAgendaError = stderr
+        loadError = ""
+        versionCheckProcess.command = [caldirExecutable, "--version"]
+        versionCheckProcess.running = true
       }
     } else {
       try {
@@ -133,6 +134,21 @@ BarWidget {
       }
     }
     setEvents(events)
+  }
+
+  function finishVersionCheck(exitCode) {
+    var versionOutput = String(versionCheckStdout.text || "")
+      + "\n" + String(versionCheckStderr.text || "")
+    if (exitCode === 0 && Model.isCaldirVersionBeforeJsonSupport(versionOutput)) {
+      loadError = "Your caldir version does not support JSON event output. Run caldir update to install v0.12.0 or newer."
+    } else {
+      var detail = Model.truncate(failedAgendaError, 320)
+      loadError = detail !== ""
+        ? "caldir failed: " + detail
+        : "Could not run caldir. Install it, then run caldir add and caldir pull."
+    }
+    failedAgendaError = ""
+    meetingDataChanged()
   }
 
   function setEvents(events) {
@@ -297,6 +313,20 @@ BarWidget {
       waitForEnd: true
     }
     onExited: function(exitCode) { root.finishRefresh(exitCode) }
+  }
+
+  Process {
+    id: versionCheckProcess
+    running: false
+    stdout: StdioCollector {
+      id: versionCheckStdout
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: versionCheckStderr
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishVersionCheck(exitCode) }
   }
 
   Process {

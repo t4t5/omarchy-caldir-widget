@@ -31,6 +31,14 @@ test("only caldir's missing-calendar response selects the setup state", () => {
   assert.equal(Model.isNoCalendarsError("permission denied"), false)
 })
 
+test("caldir versions before JSON support require an update", () => {
+  assert.equal(Model.isCaldirVersionBeforeJsonSupport("caldir-cli 0.11.1\n"), true)
+  assert.equal(Model.isCaldirVersionBeforeJsonSupport("caldir-cli v0.12.0-beta.1"), true)
+  assert.equal(Model.isCaldirVersionBeforeJsonSupport("caldir-cli 0.12.0"), false)
+  assert.equal(Model.isCaldirVersionBeforeJsonSupport("caldir-cli 0.13.2"), false)
+  assert.equal(Model.isCaldirVersionBeforeJsonSupport("unexpected output"), false)
+})
+
 test("parseAgenda normalizes and sorts a bare caldir array", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T12:00:00+01:00", { title: "Later" }),
