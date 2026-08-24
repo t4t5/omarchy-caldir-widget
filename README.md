@@ -72,8 +72,8 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 ### Custom script
 
 When clicking an event item, the default behaviour is the following:
-- events with a detected meeting link open that link in your browser
-- all other events open in renCal through a `rencal://` deeplink
+- events with a detected meeting link open that link in your browser.
+- all other events open in renCal through a `rencal://` deeplink.
 
 For the "Next meeting" card:
 - the **Join Meeting** button (or a right-click on the bar) opens the meeting link in your browser.
@@ -84,8 +84,15 @@ To customize this behavior, create `~/.config/omarchy/caldir/open.lua` and defin
 #### Examples
 
 ```lua
+-- Show a notification whenever an event is opened
+function on_open(event, action)
+  exec { "notify-send", "Hello world" }
+  default_open(event, action)
+end
+```
+
+```lua
 -- Start a transcript whenever you join a meeting
--- (keeps the stock behavior so the meeting link still opens in the browser)
 function on_open(event, action)
   if action == "join" then
     exec { "start-transcription", "--title", event.title }
