@@ -1,18 +1,16 @@
 # Caldir widget for Omarchy
 
-⚡ Lightning-fast access to your calendar events in the Omarchy bar.
-
-Pairs great with [renCal](https://rencal.org).
+⚡ Lightning-fast access to your next calendar events in the Omarchy bar. Works great with [renCal](https://rencal.org).
 
 ![Screenshot](assets/screenshot.png)
 
 ## Features
 
-- Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org)
-- Uses vim motions (<kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>,<kbd>l</kbd>) for navigation
-- Highlights the next meeting when it's close to start
+- Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org).
+- Uses vim motions (<kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>,<kbd>l</kbd>) for navigation.
+- Highlights the next meeting when it's close to start.
 - One-click action. Meeting events (Google Meet, Zoom, etc) open the video URL in your browser. Non-meeting events open in [renCal](https://rencal.org).
-- Syncs automatically (can be triggered manually with <kbd>s</kbd>)
+- Syncs automatically (or trigger manually with <kbd>s</kbd>).
 
 ## Installation
 
@@ -24,7 +22,7 @@ This will add the widget to `~/.config/omarchy/shell.json` as:
 
 ```json
 {
-  "id": "org.ren.caldir",
+  "id": "org.ren.caldir"
 }
 ```
 
@@ -38,10 +36,11 @@ It is also recommended to have [renCal](https://rencal.org) installed, so that y
 
 ### Shortcuts
 
-You can add a keybinding to `~/.config/hypr/bidnings.lua` to open the widget more quickly:
+Set a key binding in `~/.config/hypr/bidnings.lua` to open the widget more quickly:
 
 ```lua
-o.bind("SUPER + SHIFT + C", "Toggle caldir widget", "omarchy shell org.ren.caldir toggle")
+-- Toggle caldir widget
+o.bind("SUPER + SHIFT + C", "Caldir widget", "omarchy shell org.ren.caldir toggle")
 ```
 
 ### IPC
@@ -55,7 +54,7 @@ omarchy shell org.ren.caldir refresh
 
 ## Settings
 
-Set your preferences in `~/.config/omarchy/shell.json` 
+Set your preferences in `~/.config/omarchy/shell.json`:
 
 ```json
 {
@@ -111,34 +110,23 @@ EVENT_UID='event@example.com' bin/open-event --print auto
 # calendar rencal://event?uid=event%40example.com
 ```
 
-## Optional background pull
+## Contributing
 
-The widget refreshes from local files once a minute. Inspect it with:
+For local development, we use a [justfile](https://just.systems/man/en/) for developer commands.
 
-```sh
-systemctl --user status caldir-pull.timer
-journalctl --user -u caldir-pull.service
-```
-
-## Development
-
-For local development, validate and symlink this checkout into Omarchy's
-personal plugin directory:
+Install the locally cloned repo in your Omarchy bar to test:
 
 ```sh
 just install
 ```
 
-The recipe safely reuses a symlink that already points to this checkout and
-repairs dangling symlinks left by a moved or renamed checkout. It refuses to
-replace another file, directory, or live symlink. After source edits, validate
-and cold-reload the shell with:
+When making changes, you can reload it with:
 
 ```sh
 just reload
 ```
 
-To disable the plugin and remove only that development symlink:
+To remove the plugin:
 
 ```sh
 just uninstall

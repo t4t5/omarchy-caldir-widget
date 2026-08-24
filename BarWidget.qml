@@ -6,8 +6,8 @@ import qs.Ui
 import "Model.mjs" as Model
 
 // Omarchy Caldir Widget — a local caldir-backed event countdown.
-// Left click opens the schedule, right click joins the next meeting, and middle
-// click pulls remote calendars before refreshing the local view.
+// Remote calendars are pulled every five minutes. Left click opens the schedule,
+// right click joins the next meeting, and middle click pulls immediately.
 BarWidget {
   id: root
   moduleName: "org.ren.caldir"
@@ -275,6 +275,13 @@ BarWidget {
       root.now = date
       root.refresh()
     }
+  }
+
+  Timer {
+    interval: 5 * 60 * 1000
+    repeat: true
+    running: root.caldirState === "ready"
+    onTriggered: root.pull()
   }
 
   Process {
