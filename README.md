@@ -1,66 +1,72 @@
 # Caldir widget for Omarchy
 
-Lightning-fast access to your next calendar events in the Omarchy bar.
-
-Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org).
+⚡ Lightning-fast access to your calendar events in the Omarchy bar.
 
 Pairs great with [renCal](https://rencal.org).
 
 ![Screenshot](assets/screenshot.png)
 
-## Install
+## Features
+
+- Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org)
+- Uses vim motions (<kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>,<kbd>l</kbd>) for navigation
+- Highlights the next meeting when it's close to start
+- One-click action. Meeting events (Google Meet, Zoom, etc) open the video URL in your browser. Non-meeting events open in [renCal](https://rencal.org).
+- Syncs automatically (can be triggered manually with <kbd>s</kbd>)
+
+## Installation
 
 ```sh
-omarchy plugin add <repo-url> --enable
+omarchy plugin add https://github.com/t4t5/omarchy-caldir-widget --enable
 ```
 
-Requires [caldir-cli](https://caldir.org) v0.12.1 or higher.
+This will add the widget to `~/.config/omarchy/shell.json` as:
 
+```json
+{
+  "id": "org.ren.caldir",
+}
+```
 
-## Use
+## Usage
 
-- Left-click toggles the schedule panel and refreshes local event data.
-- Left-clicking a schedule row runs the event-open script. By default, video
-  meetings open through the desktop's registered HTTPS handler; other events
-  open in rencal at that event.
-- The hero's Join and Open in Calendar buttons use the same script with an
-  explicit action.
-- Right-click joins the next video meeting; if none exists, it opens the panel.
-- Middle-click runs `caldir pull` and refreshes local data when it finishes.
-- The sync button and the `s` keyboard shortcut while the panel is open do the
-  same. Automatic refreshes only re-read local caldir data and preferences with
-  `caldir events`, `caldir calendars`, and `caldir config`.
-- When the next-meeting hero is shown, keyboard focus starts on Join Meeting.
-  Left/Right or `h`/`l` switches between the hero actions, while Up/Down or `j`/`k` moves
-  between the hero and schedule events. Enter activates the focused action.
-- Escape closes the popup; Tab switches panels.
+The widget uses [caldir-cli](https://caldir.org) to read your calendar data (requires v0.12.1 or higher).
 
-Failed commands and malformed responses clear the current schedule and show
-the error in the panel. Declined invitations stay in the schedule with a
-strikethrough, but never drive the bar. Tentative and
-unanswered invitations stay in the schedule, shown dimmed and italic, but never
-drive the bar. The schedule includes all events, while the bar and next-meeting
-hero only follow events with a supported video URL. Multi-day events appear on
-each local calendar day they occupy, starting with today; event end dates are
-treated as exclusive. Schedule rows use their calendar color as a slim bar for
-timed events or a dot for all-day events. Events that already ended today remain
-in the schedule, dimmed with a check mark.
+See the caldir docs for [how to connect a calendar](https://caldir.org/quickstart/).
 
-The bar meeting follows MeetingBar's selection rules: a meeting with under a
-minute left is never shown, and a meeting in progress hands the bar to the
-following one once it starts within ten minutes, so back-to-back calls show
-the meeting you need to join next. Google Meet, Zoom, Microsoft Teams, Webex,
-Jitsi, Whereby, and Proton Meet links are detected. Links wrapped in Outlook
-SafeLinks or Google `google.com/url?q=` redirects are unwrapped before
-detection. The provider-owned `X-GOOGLE-CONFERENCE`, `X-OUTLOOK-CONFERENCE`,
-and `X-PM-CONFERENCE-URL` properties take priority. Without one of those, the
-widget checks the event URL, location, then description.
+It is also recommended to have [renCal](https://rencal.org) installed, so that you can view and edit your caldir events through a GUI.
 
-### Settings
+### Shortcuts
+
+You can add a keybinding to `~/.config/hypr/bidnings.lua` to open the widget more quickly:
+
+```lua
+o.bind("SUPER + SHIFT + C", "Toggle caldir widget", "omarchy shell org.ren.caldir toggle")
+```
+
+### IPC
+
+```sh
+omarchy shell org.ren.caldir toggle
+omarchy shell org.ren.caldir open
+omarchy shell org.ren.caldir close
+omarchy shell org.ren.caldir refresh
+```
+
+## Settings
+
+Set your preferences in `~/.config/omarchy/shell.json` 
+
+```json
+{
+  "id": "org.ren.caldir",
+  "daysAhead": 3
+}
+```
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `daysAhead` | `2` | Number of future schedule days to query |
+| `daysAhead` | `2` | Number of future schedule days to display |
 | `openScript` | `""` | Path to a custom event-open script |
 
 ### Customizing event opening
@@ -103,15 +109,6 @@ resolved action and URL without opening anything:
 ```sh
 EVENT_UID='event@example.com' bin/open-event --print auto
 # calendar rencal://event?uid=event%40example.com
-```
-
-### IPC
-
-```sh
-omarchy shell org.ren.caldir refresh
-omarchy shell org.ren.caldir toggle
-omarchy shell org.ren.caldir open
-omarchy shell org.ren.caldir close
 ```
 
 ## Optional background pull
