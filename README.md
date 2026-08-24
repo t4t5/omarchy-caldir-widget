@@ -1,63 +1,21 @@
-# Omarchy Caldir Widget
+# Caldir widget for Omarchy
 
-An Omarchy Quattro bar widget that shows the next meeting and a live countdown.
-Click it for a next-meeting hero and multi-day schedule, or right-click to join
-the next video meeting.
+Lightning-fast access to your next calendar events in the Omarchy bar.
 
-The widget runs `caldir events --json` against local calendar files, uses
-`caldir calendars --json` for calendar colors, and reads `caldir config --json`
-to honor the configured 12- or 24-hour time display. It does not parse ICS,
-store credentials, or contact a calendar provider. Sync is kept separate
-through `caldir pull`.
+Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org).
 
-## Requirements
+Pairs great with [renCal](https://rencal.org).
 
-- Omarchy 4 with the Quickshell-based bar
-- `caldir` v0.12.1 or newer, available on the shell's `PATH`
-- At least one calendar configured and pulled with caldir
-
-Check the data source before installing:
-
-```sh
-curl -sSf https://caldir.org/install.sh | sh
-caldir connect
-caldir sync
-caldir events --json --from 2026-08-19 --to 2026-08-22
-```
-
-If `caldir` is missing, opening the widget offers to run the official installer
-and links to [caldir.org](https://caldir.org) for provider setup. Installation
-only starts after clicking **Install caldir**.
+![Screenshot](assets/screenshot.png)
 
 ## Install
-
-From a hosted Git repository:
 
 ```sh
 omarchy plugin add <repo-url> --enable
 ```
 
-For local development, validate and symlink this checkout into Omarchy's
-personal plugin directory:
+Requires [caldir-cli](https://caldir.org) v0.12.1 or higher.
 
-```sh
-just install
-```
-
-The recipe safely reuses a symlink that already points to this checkout and
-repairs dangling symlinks left by a moved or renamed checkout. It refuses to
-replace another file, directory, or live symlink. After source edits, validate
-and cold-reload the shell with:
-
-```sh
-just reload
-```
-
-To disable the plugin and remove only that development symlink:
-
-```sh
-just uninstall
-```
 
 ## Use
 
@@ -158,34 +116,35 @@ omarchy shell org.ren.caldir close
 
 ## Optional background pull
 
-The widget refreshes from local files once a minute. To pull provider changes
-every five minutes, install and enable the included systemd user timer:
-
-```sh
-install -Dm644 systemd/caldir-pull.service ~/.config/systemd/user/caldir-pull.service
-install -Dm644 systemd/caldir-pull.timer ~/.config/systemd/user/caldir-pull.timer
-systemctl --user daemon-reload
-systemctl --user enable --now caldir-pull.timer
-```
-
-Inspect it with:
+The widget refreshes from local files once a minute. Inspect it with:
 
 ```sh
 systemctl --user status caldir-pull.timer
 journalctl --user -u caldir-pull.service
 ```
 
-The timer is optional; another process may keep caldir's local files fresh.
-
 ## Development
 
-The model is native ESM with no runtime dependencies or build step:
+For local development, validate and symlink this checkout into Omarchy's
+personal plugin directory:
 
 ```sh
-npm test
-/usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell BarWidget.qml
-/usr/lib/qt6/bin/qmllint -I ~/.local/share/omarchy/shell Panel.qml
-omarchy plugin validate .
+just install
 ```
 
-Run all three with `just test`.
+The recipe safely reuses a symlink that already points to this checkout and
+repairs dangling symlinks left by a moved or renamed checkout. It refuses to
+replace another file, directory, or live symlink. After source edits, validate
+and cold-reload the shell with:
+
+```sh
+just reload
+```
+
+To disable the plugin and remove only that development symlink:
+
+```sh
+just uninstall
+```
+
+Before submitting a PR, ensure everything runs with `just test`.
