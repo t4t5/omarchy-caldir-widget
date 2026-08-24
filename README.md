@@ -137,6 +137,16 @@ You can use these global helper functions in your script:
 | `open_rencal(event)` | Opens the event in renCal |
 | `exec(command)` | Runs a command in the background |
 
+## Uninstall
+
+```sh
+omarchy plugin remove org.ren.caldir
+```
+
+To temporarily hide the widget instead, use `omarchy plugin disable org.ren.caldir`.
+
+If you created a custom script at `~/.config/omarchy/caldir/open.lua`, remove it manually.
+
 ## Contributing
 
 For local development, we use a [justfile](https://just.systems/man/en/) for developer commands.
