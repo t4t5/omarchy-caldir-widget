@@ -120,7 +120,7 @@ end
 | Field | Value |
 | --- | --- |
 | `uid` | Event UID |
-| `recurrence_id` | Recurrence ID for a recurring instance |
+| `recurrence_id` | Recurrence ID (unique for recurring events) |
 | `title` | Event title |
 | `conference_url` | Detected video meeting URL |
 
