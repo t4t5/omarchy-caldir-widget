@@ -170,3 +170,9 @@ just uninstall
 ```
 
 Before submitting a PR, ensure everything runs with `just test`.
+
+## Acknowledgments
+
+The design of the "Next meeting" card is based on [next-event](https://github.com/tobiasz-p/next-event) by [@tobiasz-p](https://github.com/tobiasz-p).
+
+The policy logic is taken from [MeetingBar](https://meetingbar.app).
