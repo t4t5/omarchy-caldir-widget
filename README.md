@@ -54,6 +54,8 @@ omarchy shell org.ren.caldir refresh
 
 ## Settings
 
+### Preferences
+
 Set your preferences in `~/.config/omarchy/shell.json`:
 
 ```json
@@ -67,17 +69,23 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 | --- | ---: | --- |
 | `daysAhead` | `2` | Number of future schedule days to display |
 
-### Customizing event opening
+### Custom script
 
-By default, events with a detected video link open that link; everything else
-opens in renCal through a deeplink. The **Join Meeting** button and a
-right-click on the bar join the next meeting, while **Open in Calendar** always
-opens renCal.
+When clicking an event item, the default behaviour is the following:
+- events with a detected meeting link open that link in your browser
+- all other events open in renCal through a `rencal://` deeplink
 
-To customize this behavior, create
-`~/.config/omarchy/caldir/open.lua` and define `on_open`:
+For the "Next meeting" card:
+- the **Join Meeting** button (or a right-click on the bar) opens the meeting link in your browser.
+- the **Open in Calendar** button opens the event in renCal.
+
+To customize this behavior, create `~/.config/omarchy/caldir/open.lua` and define `on_open`:
+
+#### Examples
 
 ```lua
+-- Start a transcript whenever you join a meeting
+-- (keeps the stock behavior so the meeting link still opens in the browser)
 function on_open(event, action)
   if action == "join" then
     exec { "start-transcription", "--title", event.title }
@@ -86,42 +94,41 @@ function on_open(event, action)
 end
 ```
 
-The file does not need to be executable. Errors appear as desktop
-notifications, and calling `default_open` at the end keeps the stock behavior.
+```lua
+-- View the event in your preferred app instead of renCal
+function on_open(event, action)
+  if action == "calendar" then
+    exec { "my-calendar-app", "--event", event.uid }
+    return -- Skip default_open here because it would open the event in renCal.
+  end
 
-The hook receives an `event` table. Every field is `nil` when absent:
+  default_open(event, action) -- Keep the stock behavior for meeting links.
+end
+```
+
+### Options
+
+`event` is a table with the following fields (can also be `nil`):
 
 | Field | Value |
 | --- | --- |
 | `uid` | Event UID |
 | `instance_id` | Instance ID; recurring instances use `<uid>__<recurrence-id>` |
 | `title` | Event title |
-| `conference_url` | Detected, unwrapped video URL |
+| `conference_url` | Detected video meeting URL |
 
-Four global helper functions are available:
+`action` is either:
+- `"join"` (to open the detected meeting link)
+- `"calendar"` (to open the event in a calendar)
+
+You can use these global helper functions in your script:
 
 | Function | Behavior |
 | --- | --- |
 | `default_open(event, action)` | Runs the bundled `join` or `calendar` policy |
 | `open_url(url)` | Opens a URL through `xdg-open` |
-| `open_rencal(event)` | Builds and opens the event's renCal deeplink |
-| `exec(command)` | Runs a command in the background; pass an argument table for shell-safe quoting or a shell command string |
-
-Use `--print` to see what a hook would run without executing anything.
-`OPEN_EVENT_CONFIG` lets you try a hook at another path:
-
-```sh
-EVENT_TITLE='Team sync' \
-EVENT_CONFERENCE_URL='https://meet.example.test/team-sync' \
-OPEN_EVENT_CONFIG=./my-open.lua \
-bin/open-event --print join
-# exec 'start-transcription' '--title' 'Team sync'
-# open https://meet.example.test/team-sync
-```
-
-The default handler does not guess at a calendar provider or open a web
-calendar fallback when `xdg-open` rejects a renCal deeplink. Install renCal or
-use `open.lua` when a different policy is wanted.
+| `open_rencal(event)` | Opens the event in renCal |
+| `exec(command)` | Runs a command in the background |
 
 ## Contributing
 
