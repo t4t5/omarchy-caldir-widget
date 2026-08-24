@@ -16,20 +16,25 @@ function fullDayLabel(date) {
   return WEEKDAYS[date.getDay()] + " " + date.getDate() + " " + MONTHS[date.getMonth()]
 }
 
-export function hm(value) {
+export function hm(value, timeFormat = "24h") {
   const date = new Date(value)
   if (isNaN(date.getTime())) return ""
+  if (timeFormat === "12h") {
+    const hours = date.getHours()
+    const hour = hours % 12 || 12
+    return hour + ":" + pad2(date.getMinutes()) + (hours < 12 ? "am" : "pm")
+  }
   return pad2(date.getHours()) + ":" + pad2(date.getMinutes())
 }
 
-export function timeRange(start, end) {
-  const startLabel = hm(start)
+export function timeRange(start, end, timeFormat = "24h") {
+  const startLabel = hm(start, timeFormat)
   if (!startLabel) return ""
-  const endLabel = hm(end)
+  const endLabel = hm(end, timeFormat)
   return endLabel ? startLabel + "–" + endLabel : startLabel
 }
 
-export function meetingTimeLabel(start, end, now) {
+export function meetingTimeLabel(start, end, now, timeFormat = "24h") {
   const startDate = new Date(start)
   const nowDate = now
   if (isNaN(startDate.getTime()) || isNaN(nowDate.getTime())) return ""
@@ -37,7 +42,7 @@ export function meetingTimeLabel(start, end, now) {
   if (sameDay(startDate, nowDate)) labels.push("Today")
   else if (sameDay(startDate, addLocalDays(nowDate, 1))) labels.push("Tomorrow")
   else labels.push(fullDayLabel(startDate))
-  const range = timeRange(start, end)
+  const range = timeRange(start, end, timeFormat)
   if (range) labels.push(range)
   return labels.join(" · ")
 }
@@ -50,7 +55,7 @@ function timeLeftLabel(end, current) {
   return (remainder ? hours + "h " + remainder + "m" : hours + "h") + " left"
 }
 
-export function relativeStatus(event, now) {
+export function relativeStatus(event, now, timeFormat = "24h") {
   if (!event) return ""
   const start = event.startMs
   const end = event.endMs
@@ -59,7 +64,7 @@ export function relativeStatus(event, now) {
 
   if (current < start) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
-    return minutes >= 60 ? "starts at " + hm(start) : "starts in " + minutes + " min"
+    return minutes >= 60 ? "starts at " + hm(start, timeFormat) : "starts in " + minutes + " min"
   }
   if (current < end) return timeLeftLabel(end, current)
   return ""
@@ -76,7 +81,7 @@ function dayLabel(value, now) {
   return fullDayLabel(date)
 }
 
-export function formatLabel(event, now) {
+export function formatLabel(event, now, timeFormat = "24h") {
   let title = event.title
   const start = event.startMs
   const end = event.endMs
@@ -89,7 +94,9 @@ export function formatLabel(event, now) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     suffix = " · in " + minutes + " min"
   } else {
-    suffix = " · " + (sameDay(new Date(start), now) ? hm(start) : dayLabel(start, now) + " " + hm(start))
+    suffix = " · " + (sameDay(new Date(start), now)
+      ? hm(start, timeFormat)
+      : dayLabel(start, now) + " " + hm(start, timeFormat))
   }
 
   const titleLimit = Math.max(3, MAX_BAR_LABEL_LENGTH - suffix.length)

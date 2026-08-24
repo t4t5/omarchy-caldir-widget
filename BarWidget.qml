@@ -22,6 +22,7 @@ BarWidget {
   property bool needsCalendarSetup: false
   property string caldirState: "checking"
   property string caldirExecutable: ""
+  property string timeFormat: "24h"
   property date now: new Date()
 
   readonly property bool syncing: pullProcess.running
@@ -30,7 +31,7 @@ BarWidget {
     && now.getTime() >= nextMeeting.startMs
     && now.getTime() < nextMeeting.endMs
   readonly property string label: nextMeeting
-    ? "  " + Model.formatLabel(nextMeeting, now)
+    ? "  " + Model.formatLabel(nextMeeting, now, timeFormat)
     : ""
   readonly property bool showingFallbackIcon: label === ""
 
@@ -44,6 +45,18 @@ BarWidget {
   }
 
   function startDataRefresh() {
+    configProcess.command = [caldirExecutable, "config", "--json"]
+    configProcess.running = true
+  }
+
+  function finishConfigRefresh(exitCode) {
+    if (exitCode === 0) {
+      try {
+        timeFormat = Model.parseTimeFormat(configStdout.text || "")
+      } catch (error) {
+        // Time format is presentational; retain the last known preference.
+      }
+    }
     calendarProcess.command = [caldirExecutable, "calendars", "--json"]
     calendarProcess.running = true
   }
@@ -51,7 +64,7 @@ BarWidget {
   // The binary and its supported version are detected once; refreshes reuse
   // the cached path until an install or update requires another check.
   function refresh() {
-    if (caldirCheckProcess.running || calendarProcess.running
+    if (caldirCheckProcess.running || configProcess.running || calendarProcess.running
         || agendaProcess.running || caldirVersionCheck.running) return
     if (caldirState === "ready" && caldirExecutable !== "") {
       startDataRefresh()
@@ -275,6 +288,16 @@ BarWidget {
   }
 
   Process {
+    id: configProcess
+    running: false
+    stdout: StdioCollector {
+      id: configStdout
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishConfigRefresh(exitCode) }
+  }
+
+  Process {
     id: calendarProcess
     running: false
     stdout: StdioCollector {
@@ -407,8 +430,8 @@ BarWidget {
     if (loadError !== "") return loadError
     if (!nextMeeting) return "No upcoming meetings"
     var title = nextMeeting.title
-    var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs)
-    var status = Model.relativeStatus(nextMeeting, now)
+    var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
+    var status = Model.relativeStatus(nextMeeting, now, timeFormat)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")
     return line
   }

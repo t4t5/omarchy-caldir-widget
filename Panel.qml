@@ -32,6 +32,7 @@ Panel {
   ]
   readonly property var scheduleGroups: hostWidget && hostWidget.scheduleGroups ? hostWidget.scheduleGroups : []
   readonly property var next: hostWidget ? hostWidget.nextMeeting : null
+  readonly property string timeFormat: hostWidget ? hostWidget.timeFormat : "24h"
   property date now: hostWidget ? hostWidget.now : new Date()
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
@@ -524,8 +525,10 @@ Panel {
                 Text {
                   width: parent.width
                   text: root.next
-                    ? Model.meetingTimeLabel(root.next.startMs, root.next.endMs, root.now)
-                      + (Model.relativeStatus(root.next, root.now) ? " · " + Model.relativeStatus(root.next, root.now) : "")
+                    ? Model.meetingTimeLabel(root.next.startMs, root.next.endMs, root.now, root.timeFormat)
+                      + (Model.relativeStatus(root.next, root.now, root.timeFormat)
+                        ? " · " + Model.relativeStatus(root.next, root.now, root.timeFormat)
+                        : "")
                     : ""
                   color: Qt.darker(root.contentForeground, 1.35)
                   font.family: root.contentFontFamily
@@ -756,8 +759,10 @@ Panel {
 
                           Text {
                             Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: Style.space(44)
-                            text: eventRow.meeting.all_day ? "ALL DAY" : Model.hm(eventRow.meeting.startMs)
+                            Layout.preferredWidth: Style.space(root.timeFormat === "12h" ? 54 : 44)
+                            text: eventRow.meeting.all_day
+                              ? "ALL DAY"
+                              : Model.hm(eventRow.meeting.startMs, root.timeFormat)
                             color: Qt.darker(root.contentForeground, 1.3)
                             font.family: root.contentFontFamily
                             font.pixelSize: eventRow.meeting.all_day ? Style.font.caption : Style.font.bodySmall

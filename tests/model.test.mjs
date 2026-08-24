@@ -450,6 +450,29 @@ test("relative status and time formatting use precomputed timestamps", () => {
   assert.equal(Model.relativeStatus(active, NOW), "3h left")
 })
 
+test("time formatting honors caldir's 12-hour preference", () => {
+  const morning = new Date("2026-08-19T09:05:00+01:00")
+  const noon = new Date("2026-08-19T12:00:00+01:00")
+  const midnight = new Date("2026-08-20T00:00:00+01:00")
+  const future = Model.normalizedEvent(event("2026-08-19T12:00:00+01:00"))
+  const tomorrow = Model.normalizedEvent(event("2026-08-20T09:00:00+01:00", { title: "Planning" }))
+
+  assert.equal(Model.hm(morning, "12h"), "9:05am")
+  assert.equal(Model.hm(noon, "12h"), "12:00pm")
+  assert.equal(Model.hm(midnight, "12h"), "12:00am")
+  assert.equal(Model.timeRange(morning, noon, "12h"), "9:05am–12:00pm")
+  assert.equal(Model.meetingTimeLabel(future.startMs, future.endMs, NOW, "12h"), "Today · 12:00pm–12:30pm")
+  assert.equal(Model.relativeStatus(future, NOW, "12h"), "starts at 12:00pm")
+  assert.equal(Model.formatLabel(tomorrow, NOW, "12h"), "Planning · Tmrw 9:00am")
+})
+
+test("caldir config parsing reads time_format with a 24-hour fallback", () => {
+  assert.equal(Model.parseTimeFormat(JSON.stringify({ config: { time_format: "12h" } })), "12h")
+  assert.equal(Model.parseTimeFormat(JSON.stringify({ config: { time_format: "24h" } })), "24h")
+  assert.equal(Model.parseTimeFormat(JSON.stringify({ config: {} })), "24h")
+  assert.throws(() => Model.parseTimeFormat("not json"), SyntaxError)
+})
+
 test("queryRange uses local calendar-day arithmetic", () => {
   assert.deepEqual(Model.queryRange(NOW, 3), { from: "2026-08-19", to: "2026-08-22" })
   assert.equal(Model.localDateKey(Model.addLocalDays(new Date(2026, 7, 31), 1)), "2026-09-01")

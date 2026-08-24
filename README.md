@@ -4,10 +4,11 @@ An Omarchy Quattro bar widget that shows the next meeting and a live countdown.
 Click it for a next-meeting hero and multi-day schedule, or right-click to join
 the next video meeting.
 
-The widget runs `caldir events --json` against local calendar files and uses
-`caldir calendars --json` for calendar colors. It does not parse ICS, store
-credentials, or contact a calendar provider. Sync is kept separate through
-`caldir pull`.
+The widget runs `caldir events --json` against local calendar files, uses
+`caldir calendars --json` for calendar colors, and reads `caldir config --json`
+to honor the configured 12- or 24-hour time display. It does not parse ICS,
+store credentials, or contact a calendar provider. Sync is kept separate
+through `caldir pull`.
 
 ## Requirements
 
@@ -69,8 +70,8 @@ just uninstall
 - Right-click joins the next video meeting; if none exists, it opens the panel.
 - Middle-click runs `caldir pull` and refreshes local data when it finishes.
 - The sync button and the `s` keyboard shortcut while the panel is open do the
-  same. Automatic refreshes only re-read local caldir data with `caldir events`
-  and `caldir calendars`.
+  same. Automatic refreshes only re-read local caldir data and preferences with
+  `caldir events`, `caldir calendars`, and `caldir config`.
 - When the next-meeting hero is shown, keyboard focus starts on Join Meeting.
   Left/Right or `h`/`l` switches between the hero actions, while Up/Down or `j`/`k` moves
   between the hero and schedule events. Enter activates the focused action.

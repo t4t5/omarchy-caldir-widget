@@ -19,6 +19,10 @@ export {
 } from "./model/events.mjs"
 
 export {
+  parseTimeFormat
+} from "./model/config.mjs"
+
+export {
   nextMeeting,
   buildScheduleGroups
 } from "./model/select.mjs"
