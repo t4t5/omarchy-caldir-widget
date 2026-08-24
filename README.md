@@ -36,7 +36,7 @@ It is also recommended to have [renCal](https://rencal.org) installed, so that y
 
 ### Shortcuts
 
-Set a key binding in `~/.config/hypr/bidnings.lua` to open the widget more quickly:
+Set a key binding in `~/.config/hypr/bindings.lua` to open the widget more quickly:
 
 ```lua
 -- Toggle caldir widget

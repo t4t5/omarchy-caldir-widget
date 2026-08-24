@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "author": "t4t5",
   "license": "MIT",
-  "description": "Connect any calendar with caldir and see your next events in the bar.",
+  "description": "Quick access to your next calendar events.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "Caldir Calendar",
-    "description": "Shows the next meeting in the bar and a schedule on click",
+    "description": "Shows the next meeting in the bar and your agenda on click",
     "category": "Productivity",
     "allowMultiple": false,
     "defaultSection": "right",
