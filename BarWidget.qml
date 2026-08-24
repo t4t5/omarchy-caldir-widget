@@ -26,7 +26,6 @@ BarWidget {
   property date now: new Date()
 
   readonly property bool syncing: pullProcess.running
-  readonly property bool installingCaldir: installProcess.running
   readonly property bool inMeeting: nextMeeting
     && now.getTime() >= nextMeeting.startMs
     && now.getTime() < nextMeeting.endMs
@@ -37,15 +36,15 @@ BarWidget {
 
   function agendaCommand() {
     var range = Model.queryRange(new Date(), daysAhead)
-    return [
+    return Model.boundedCommand([
       caldirExecutable, "events", "--json",
       "--from", range.from,
       "--to", range.to
-    ]
+    ])
   }
 
   function startDataRefresh() {
-    configProcess.command = [caldirExecutable, "config", "--json"]
+    configProcess.command = Model.boundedCommand([caldirExecutable, "config", "--json"])
     configProcess.running = true
   }
 
@@ -57,7 +56,7 @@ BarWidget {
         // Time format is presentational; retain the last known preference.
       }
     }
-    calendarProcess.command = [caldirExecutable, "calendars", "--json"]
+    calendarProcess.command = Model.boundedCommand([caldirExecutable, "calendars", "--json"])
     calendarProcess.running = true
   }
 
@@ -70,7 +69,7 @@ BarWidget {
       startDataRefresh()
       return
     }
-    caldirCheckProcess.command = ["which", "caldir"]
+    caldirCheckProcess.command = Model.boundedCommand(["which", "caldir"])
     caldirCheckProcess.running = true
   }
 
@@ -117,32 +116,6 @@ BarWidget {
     agendaProcess.running = true
   }
 
-  function installCaldir() {
-    if (installProcess.running) return
-    caldirState = "installing"
-    loadError = ""
-    installProcess.command = [
-      "bash", "-lc",
-      "set -o pipefail; curl -sSf https://caldir.org/install.sh | sh"
-    ]
-    installProcess.running = true
-  }
-
-  function finishInstall(exitCode) {
-    if (exitCode !== 0) {
-      var stderr = String(installStderr.text || "").trim()
-      var stdout = String(installStdout.text || "").trim()
-      var detail = Model.truncate(stderr !== "" ? stderr : stdout, 320)
-      caldirState = "missing"
-      loadError = detail !== ""
-        ? "Installation failed: " + detail
-        : "Installation failed. Visit caldir.org for manual setup instructions."
-      return
-    }
-    caldirState = "checking"
-    Qt.callLater(root.refresh)
-  }
-
   function finishRefresh(exitCode) {
     var events = []
     if (exitCode !== 0) {
@@ -163,7 +136,7 @@ BarWidget {
         loadError = ""
       } catch (error) {
         needsCalendarSetup = false
-        loadError = "caldir returned invalid JSON: " + error
+        loadError = "caldir returned unusable output: " + error
       }
     }
     setEvents(events)
@@ -181,7 +154,7 @@ BarWidget {
       return
     }
     loadError = ""
-    pullProcess.command = [caldirExecutable, "pull"]
+    pullProcess.command = Model.boundedCommand([caldirExecutable, "pull"])
     pullProcess.running = true
   }
 
@@ -215,7 +188,7 @@ BarWidget {
 
   function runHandler(event, action) {
     if (!event) return
-    openProcess.command = [handlerPath(), action]
+    openProcess.command = Model.boundedCommand([handlerPath(), action])
     openProcess.environment = handlerEnvironment(event)
     openProcess.running = true
   }
@@ -261,7 +234,7 @@ BarWidget {
         fallbackGlyph.tightWidth,
         Style.space(10),
         Math.round(Style.bar.iconSlot * 0.55))
-    : button.labelWidth
+    : plainLabel.implicitWidth
 
   onSettingsChanged: Qt.callLater(root.refresh)
 
@@ -331,25 +304,8 @@ BarWidget {
   }
 
   Process {
-    id: installProcess
-    running: false
-    stdout: StdioCollector {
-      id: installStdout
-      waitForEnd: true
-    }
-    stderr: StdioCollector {
-      id: installStderr
-      waitForEnd: true
-    }
-    onExited: function(exitCode) { root.finishInstall(exitCode) }
-  }
-
-  Process {
     id: pullProcess
     running: false
-    stdout: StdioCollector {
-      waitForEnd: true
-    }
     stderr: StdioCollector {
       id: pullStderr
       waitForEnd: true
@@ -364,7 +320,7 @@ BarWidget {
     stderr: StdioCollector { id: openStderr }
     onExited: function(exitCode) {
       if (exitCode === 0) return
-      var detail = Model.truncate(String(openStderr.text || "").trim(), 200)
+      var detail = Model.truncate(Model.plainLine(String(openStderr.text || "").trim()), 200)
       Quickshell.execDetached([
         "notify-send", "-u", "low", "Caldir widget",
         detail !== "" ? detail : "Could not open the event."
@@ -398,8 +354,9 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
+    // Render event text as PlainText instead of the host's AutoText label.
     text: root.label
-    labelVisible: !root.showingFallbackIcon
+    labelVisible: false
     hasVisualContent: true
     dimmed: root.label === ""
     active: root.inMeeting
@@ -409,6 +366,25 @@ BarWidget {
     horizontalMargin: 8.75
     verticalPadding: 8.75
     tooltipText: root.tooltipLine
+
+    Text {
+      id: plainLabel
+      visible: !root.showingFallbackIcon
+      anchors.centerIn: parent
+      text: root.label
+      textFormat: Text.PlainText
+      color: button.foreground
+      font.family: button.fontFamily
+      font.pixelSize: button.fontSize
+      renderType: Text.NativeRendering
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+
+      Behavior on color {
+        enabled: !button.bar || button.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: 160 }
+      }
+    }
 
     OpticalGlyph {
       id: fallbackGlyph
@@ -434,15 +410,15 @@ BarWidget {
     }
   }
 
+  // Sanitize external text passed to the host's AutoText tooltip.
   readonly property string tooltipLine: {
     if (caldirState === "checking") return "Checking for caldir…"
-    if (caldirState === "installing") return "Installing caldir…"
-    if (caldirState === "missing") return loadError + "\nClick to install"
-    if (caldirState === "unsupported") return loadError + "\nClick for update instructions"
+    if (caldirState === "missing") return Model.plainLine(loadError) + "\nClick for install instructions"
+    if (caldirState === "unsupported") return Model.plainLine(loadError) + "\nClick for update instructions"
     if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
-    if (loadError !== "") return loadError
+    if (loadError !== "") return Model.plainLine(loadError)
     if (!nextMeeting) return "No upcoming meetings"
-    var title = nextMeeting.title
+    var title = Model.plainLine(nextMeeting.title)
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
     var status = Model.relativeStatus(nextMeeting, now, timeFormat)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")

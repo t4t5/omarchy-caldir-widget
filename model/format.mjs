@@ -81,8 +81,16 @@ function dayLabel(value, now) {
   return fullDayLabel(date)
 }
 
+// Neutralize rich-text triggers in strings passed to host AutoText items.
+export function plainLine(value) {
+  const string = value === undefined || value === null ? "" : String(value)
+  return string
+    .replace(/[\u0000-\u001F\u007F\u2028\u2029]+/g, " ")
+    .replace(/<|&lt;/g, "‹")
+}
+
 export function formatLabel(event, now, timeFormat = "24h") {
-  let title = event.title
+  let title = plainLine(event.title)
   const start = event.startMs
   const end = event.endMs
   const current = now.getTime()

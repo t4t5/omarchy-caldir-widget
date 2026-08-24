@@ -1,4 +1,18 @@
 import { getConferenceUrl } from "./conference.mjs"
+import {
+  MAX_CALENDARS,
+  MAX_COLOR_CHARS,
+  MAX_DATE_CHARS,
+  MAX_ENUM_CHARS,
+  MAX_EVENTS,
+  MAX_FREEFORM_CHARS,
+  MAX_ID_CHARS,
+  MAX_TITLE_CHARS,
+  MAX_URL_CHARS,
+  assertOutputWithinLimit,
+  clamped,
+  limited
+} from "./limits.mjs"
 
 function text(value) {
   return value === undefined || value === null ? "" : String(value)
@@ -9,20 +23,29 @@ function lower(value) {
 }
 
 function validCalendarColor(value) {
-  const color = text(value).trim()
+  const color = limited(value, MAX_COLOR_CHARS).trim()
   return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : ""
 }
 
+const RSVP_STATUSES = ["accepted", "declined", "tentative", "needs-action"]
+
+function validRsvp(value) {
+  const rsvp = lower(limited(value, MAX_ENUM_CHARS))
+  return RSVP_STATUSES.indexOf(rsvp) !== -1 ? rsvp : ""
+}
+
 export function parseCalendarColors(stdout) {
-  const parsed = JSON.parse(text(stdout))
+  const input = text(stdout)
+  assertOutputWithinLimit(input)
+  const parsed = JSON.parse(input)
   if (!Array.isArray(parsed)) throw new Error("caldir output must be a JSON array")
 
   const colors = Object.create(null)
-  for (let i = 0; i < parsed.length; i++) {
+  for (let i = 0; i < Math.min(parsed.length, MAX_CALENDARS); i++) {
     const calendar = parsed[i]
     if (!calendar || typeof calendar !== "object") continue
 
-    const slug = text(calendar.slug).trim()
+    const slug = clamped(calendar.slug, MAX_ID_CHARS).trim()
     const color = validCalendarColor(calendar.color)
     if (slug !== "" && color !== "") colors[slug] = color
   }
@@ -32,36 +55,38 @@ export function parseCalendarColors(stdout) {
 export function normalizedEvent(raw, calendarColors) {
   if (!raw || typeof raw !== "object") return null
 
-  const startMs = Date.parse(raw.start)
+  const start = limited(raw.start, MAX_DATE_CHARS)
+  const startMs = Date.parse(start)
   if (isNaN(startMs)) return null
 
-  const rsvp = lower(raw.rsvp)
+  const rsvp = validRsvp(raw.rsvp)
 
-  const parsedEndMs = Date.parse(raw.end)
+  const end = limited(raw.end, MAX_DATE_CHARS)
+  const parsedEndMs = Date.parse(end)
   const endMs = isNaN(parsedEndMs) ? startMs : Math.max(startMs, parsedEndMs)
-  const location = text(raw.location)
-  const description = text(raw.description)
+  const location = clamped(raw.location, MAX_FREEFORM_CHARS)
+  const description = clamped(raw.description, MAX_FREEFORM_CHARS)
   const conferenceUrl = getConferenceUrl({
-    url: text(raw.url),
+    url: limited(raw.url, MAX_URL_CHARS),
     location,
     description,
     x_properties: Array.isArray(raw.x_properties) ? raw.x_properties : []
   })
 
-  const calendar = text(raw.calendar)
+  const calendar = clamped(raw.calendar, MAX_ID_CHARS)
   const calendarColor = calendarColors && typeof calendarColors === "object"
     ? validCalendarColor(calendarColors[calendar])
     : ""
 
   return {
-    uid: text(raw.uid),
-    recurrence_id: text(raw.recurrence_id),
+    uid: clamped(raw.uid, MAX_ID_CHARS),
+    recurrence_id: clamped(raw.recurrence_id, MAX_ID_CHARS),
     calendar,
     calendarColor,
-    title: text(raw.title).trim() || "Untitled event",
+    title: clamped(raw.title, MAX_TITLE_CHARS).trim() || "Untitled event",
     all_day: raw.all_day === true,
-    start: text(raw.start),
-    end: text(raw.end),
+    start,
+    end,
     location,
     description,
     rsvp,
@@ -84,8 +109,13 @@ function compareEvents(a, b) {
 
 // Invalid JSON is exceptional so the QML caller can retain last-good data.
 export function parseAgenda(stdout, calendarColors) {
-  const parsed = JSON.parse(text(stdout))
+  const input = text(stdout)
+  assertOutputWithinLimit(input)
+  const parsed = JSON.parse(input)
   if (!Array.isArray(parsed)) throw new Error("caldir output must be a JSON array")
+  if (parsed.length > MAX_EVENTS) {
+    throw new Error("caldir output exceeds " + MAX_EVENTS + " events")
+  }
 
   const events = []
   for (let i = 0; i < parsed.length; i++) {

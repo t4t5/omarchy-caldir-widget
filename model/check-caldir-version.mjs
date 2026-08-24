@@ -20,7 +20,7 @@ export function errorMessage(exitCode, versionOutput) {
     return "Could not check the installed caldir version. Run caldir update, then try again."
   }
 
-  const output = String(versionOutput === undefined || versionOutput === null ? "" : versionOutput)
+  const output = String(versionOutput === undefined || versionOutput === null ? "" : versionOutput).slice(0, 4096)
   if (!/(?:^|\s)v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?=\s|$)/.test(output)) {
     return "Could not determine the installed caldir version. Run caldir update, then try again."
   }

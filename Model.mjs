@@ -34,8 +34,29 @@ export {
   formatDuration,
   hm,
   timeRange,
-  truncate
+  truncate,
+  plainLine
 } from "./model/format.mjs"
+
+export {
+  MAX_STDOUT_BYTES,
+  MAX_STDERR_BYTES,
+  boundedCommand
+} from "./model/command.mjs"
+
+export {
+  MAX_OUTPUT_CHARS,
+  MAX_EVENTS,
+  MAX_CALENDARS,
+  MAX_X_PROPERTIES,
+  MAX_TITLE_CHARS,
+  MAX_DATE_CHARS,
+  MAX_URL_CHARS,
+  MAX_FREEFORM_CHARS,
+  MAX_PROPERTY_NAME_CHARS,
+  MAX_COLOR_CHARS,
+  MAX_ENUM_CHARS
+} from "./model/limits.mjs"
 
 export {
   isNoCalendarsError

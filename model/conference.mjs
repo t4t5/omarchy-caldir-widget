@@ -1,5 +1,23 @@
+import {
+  MAX_FREEFORM_CHARS,
+  MAX_PROPERTY_NAME_CHARS,
+  MAX_URL_CHARS,
+  MAX_X_PROPERTIES,
+  limited
+} from "./limits.mjs"
+
 function text(value) {
-  return value === undefined || value === null ? "" : String(value)
+  if (value === undefined || value === null) return ""
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean") return String(value)
+  return ""
+}
+
+// Only pass bounded web URLs to xdg-open.
+function validMeetingUrl(value) {
+  const url = limited(value, MAX_URL_CHARS).trim()
+  if (url === "") return ""
+  return /^https?:\/\//i.test(url) ? url : ""
 }
 
 // Calendar bodies wrap meeting links in Outlook SafeLinks and Google
@@ -55,7 +73,7 @@ function rewriteGoogleRedirects(input) {
 }
 
 function unwrapWrappedLinks(value) {
-  let current = unwrapSafeLinks(text(value))
+  let current = unwrapSafeLinks(limited(value, MAX_FREEFORM_CHARS))
   for (let pass = 0; pass < MAX_UNWRAP_PASSES; pass++) {
     const rewritten = rewriteGoogleRedirects(current)
     if (rewritten === null) break
@@ -89,13 +107,15 @@ const CONFERENCE_PROPERTY_NAMES = [
 
 function conferenceProperty(xProperties) {
   const properties = Array.isArray(xProperties) ? xProperties : []
+  const scanCount = Math.min(properties.length, MAX_X_PROPERTIES)
   for (let nameIndex = 0; nameIndex < CONFERENCE_PROPERTY_NAMES.length; nameIndex++) {
     const expectedName = CONFERENCE_PROPERTY_NAMES[nameIndex]
-    for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
+    for (let propertyIndex = 0; propertyIndex < scanCount; propertyIndex++) {
       const property = properties[propertyIndex]
       if (!property || typeof property !== "object") continue
-      if (text(property.name).trim().toUpperCase() !== expectedName) continue
-      return { present: true, url: text(property.value).trim() }
+      const propertyName = limited(property.name, MAX_PROPERTY_NAME_CHARS)
+      if (propertyName.trim().toUpperCase() !== expectedName) continue
+      return { present: true, url: property.value }
     }
   }
   return { present: false, url: "" }
@@ -132,6 +152,6 @@ export function getConferenceUrl(event) {
   const source = event && typeof event === "object" ? event : {}
   const declaredConference = conferenceProperty(source.x_properties)
   return declaredConference.present
-    ? declaredConference.url
-    : findVideoUrl(source.url) || findVideoUrl(source.location) || findVideoUrl(source.description)
+    ? validMeetingUrl(declaredConference.url)
+    : validMeetingUrl(findVideoUrl(source.url) || findVideoUrl(source.location) || findVideoUrl(source.description))
 }

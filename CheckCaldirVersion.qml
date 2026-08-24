@@ -1,6 +1,7 @@
 import QtQml
 import Quickshell.Io
 import "model/check-caldir-version.mjs" as VersionCheck
+import "model/command.mjs" as Command
 
 // Verify the CLI requirement before attempting to load calendar data.
 QtObject {
@@ -10,7 +11,7 @@ QtObject {
   signal finished(string errorMessage)
 
   function start(executable) {
-    process.command = [executable, "--version"]
+    process.command = Command.boundedCommand([executable, "--version"])
     process.running = true
   }
 

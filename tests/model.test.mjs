@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import test from "node:test"
 
 import * as Model from "../Model.mjs"
@@ -483,4 +484,181 @@ test("queryRange uses local calendar-day arithmetic", () => {
 
 test("truncation is stable", () => {
   assert.equal(Model.truncate("A very long event", 8), "A very…")
+})
+
+test("oversized caldir output is rejected before parsing", () => {
+  const oversized = "x".repeat(Model.MAX_OUTPUT_CHARS + 1)
+  assert.throws(() => Model.parseAgenda(oversized), /exceeds/)
+  assert.throws(() => Model.parseCalendarColors(oversized), /exceeds/)
+  assert.throws(() => Model.parseTimeFormat(oversized), /exceeds/)
+})
+
+test("the agenda rejects excess cardinality before creating event models", () => {
+  const base = Date.parse("2026-08-19T11:00:00+01:00")
+  const raw = []
+  for (let i = Model.MAX_EVENTS; i >= 0; i--) {
+    raw.push(event(new Date(base + i * 5 * Model.MINUTE_MS).toISOString(), { title: `Event ${i}` }))
+  }
+
+  assert.throws(() => Model.parseAgenda(JSON.stringify(raw)), /exceeds 500 events/)
+})
+
+test("calendar colors ignore calendars past the cardinality cap", () => {
+  const raw = []
+  for (let i = 0; i < Model.MAX_CALENDARS + 10; i++) {
+    raw.push({ slug: `cal-${i}`, color: "#aabbcc" })
+  }
+
+  const colors = Model.parseCalendarColors(JSON.stringify(raw))
+  assert.equal(colors[`cal-${Model.MAX_CALENDARS - 1}`], "#aabbcc")
+  assert.equal(colors[`cal-${Model.MAX_CALENDARS}`], undefined)
+})
+
+test("event text fields are clamped to their length caps", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", {
+      title: "T".repeat(Model.MAX_TITLE_CHARS + 50),
+      description: "D".repeat(100000)
+    })
+  ]))
+
+  assert.equal(parsed[0].title.length, Model.MAX_TITLE_CHARS)
+  assert.ok(parsed[0].description.length < 100000)
+})
+
+test("field limits apply before trimming, parsing, and matching", () => {
+  const overlongDate = "2026-08-19T11:00:00+01:00" + " ".repeat(Model.MAX_DATE_CHARS)
+  const overlongPropertyName = "X-GOOGLE-CONFERENCE" + " ".repeat(Model.MAX_PROPERTY_NAME_CHARS)
+  const overlongPropertyUrl = "https://meet.google.com/property" + " ".repeat(Model.MAX_URL_CHARS)
+  const overlongEventUrl = "https://meet.google.com/url-field" + "a".repeat(Model.MAX_URL_CHARS)
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event(overlongDate),
+    event("2026-08-19T11:00:00+01:00", {
+      title: " ".repeat(Model.MAX_TITLE_CHARS) + "Hidden suffix",
+      url: "https://meet.google.com/fallback",
+      x_properties: [{ name: overlongPropertyName, value: "https://meet.google.com/property" }]
+    }),
+    event("2026-08-19T12:00:00+01:00", {
+      x_properties: [{ name: "X-GOOGLE-CONFERENCE", value: overlongPropertyUrl }]
+    }),
+    event("2026-08-19T13:00:00+01:00", {
+      url: overlongEventUrl
+    })
+  ]))
+
+  assert.equal(parsed.length, 3)
+  assert.equal(parsed[0].title, "Untitled event")
+  assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/fallback")
+  assert.equal(parsed[1].conferenceUrl, "")
+  assert.equal(parsed[2].conferenceUrl, "")
+
+  const colors = Model.parseCalendarColors(JSON.stringify([
+    { slug: "work", color: "#aabbcc" + " ".repeat(Model.MAX_COLOR_CHARS) }
+  ]))
+  assert.equal(colors.work, undefined)
+})
+
+test("conference URLs only pass with a web scheme and sane length", () => {
+  const withProperty = value => event("2026-08-19T11:00:00+01:00", {
+    x_properties: [{ name: "X-GOOGLE-CONFERENCE", value }]
+  })
+
+  const good = Model.parseAgenda(JSON.stringify([withProperty("https://meet.google.com/abc-defg-hij")]))
+  assert.equal(good[0].conferenceUrl, "https://meet.google.com/abc-defg-hij")
+
+  const bad = Model.parseAgenda(JSON.stringify([
+    withProperty("javascript:alert(1)"),
+    withProperty("file:///etc/passwd"),
+    withProperty("https://meet.jit.si/" + "a".repeat(Model.MAX_URL_CHARS))
+  ]))
+  for (const parsed of bad) assert.equal(parsed.conferenceUrl, "")
+
+  const overlongMatch = "https://meet.jit.si/" + "a".repeat(Model.MAX_URL_CHARS)
+  assert.equal(Model.getConferenceUrl({ location: overlongMatch }), "")
+})
+
+test("x-property scanning stops at the cardinality cap", () => {
+  const fillers = Array.from({ length: Model.MAX_X_PROPERTIES }, (_, i) => ({
+    name: `X-FILLER-${i}`,
+    value: "ignored"
+  }))
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", {
+      url: "https://meet.google.com/url-field",
+      x_properties: [
+        ...fillers,
+        { name: "X-GOOGLE-CONFERENCE", value: "https://meet.google.com/hidden" }
+      ]
+    })
+  ]))
+
+  assert.equal(parsed[0].conferenceUrl, "https://meet.google.com/url-field")
+})
+
+test("plainLine neutralizes rich-text triggers and collapses lines", () => {
+  assert.equal(Model.plainLine("<b>Hi</b>\nline2"), "‹b>Hi‹/b> line2")
+  assert.equal(Model.plainLine("this &lt;i&gt; stays plain"), "this ‹i&gt; stays plain")
+  assert.equal(Model.plainLine("tabs\tand\r\nnulls "), "tabs and nulls ")
+  assert.equal(Model.plainLine(null), "")
+})
+
+test("bar labels never carry markup-capable titles", () => {
+  const spoofed = Model.normalizedEvent(event("2026-08-19T10:01:00+01:00", {
+    title: "<img src=x>"
+  }))
+  assert.equal(Model.formatLabel(spoofed, NOW), "‹img src=x> · in 1 min")
+})
+
+test("rsvp only stores known statuses", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", { rsvp: "DECLINED" }),
+    event("2026-08-19T12:00:00+01:00", { rsvp: "j".repeat(100000) }),
+    event("2026-08-19T13:00:00+01:00", { rsvp: null })
+  ]))
+
+  assert.equal(parsed[0].rsvp, "declined")
+  assert.equal(parsed[0].declined, true)
+  assert.equal(parsed[1].rsvp, "")
+  assert.equal(parsed[1].declined, false)
+  assert.equal(parsed[2].rsvp, "")
+})
+
+function runBounded(argv) {
+  const command = Model.boundedCommand(argv)
+  return spawnSync(command[0], command.slice(1), {
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024
+  })
+}
+
+test("bounded commands pass small output and exit codes through", () => {
+  const ok = runBounded(["sh", "-c", "printf out; printf err >&2"])
+  assert.equal(ok.status, 0)
+  assert.equal(ok.stdout, "out")
+  assert.equal(ok.stderr, "err")
+
+  const failed = runBounded(["sh", "-c", "printf partial; printf oops >&2; exit 3"])
+  assert.equal(failed.status, 3)
+  assert.equal(failed.stdout, "partial")
+  assert.equal(failed.stderr, "oops")
+})
+
+test("bounded commands cap stdout and kill the producer", () => {
+  const result = runBounded(["yes", "overflow"])
+  assert.equal(result.stdout.length, Model.MAX_STDOUT_BYTES)
+  assert.notEqual(result.status, 0)
+})
+
+test("bounded commands cap stderr and kill the producer", () => {
+  const result = runBounded(["sh", "-c", "yes err >&2"])
+  assert.equal(result.stderr.length, Model.MAX_STDERR_BYTES)
+  assert.equal(result.stdout, "")
+  assert.notEqual(result.status, 0)
+})
+
+test("capped stderr still selects the setup state", () => {
+  const message = "Error: No calendars found.\n\nConnect your first calendar with:\n  caldir connect <provider>"
+  const result = runBounded(["sh", "-c", 'printf %s "$1" >&2; exit 1', "sh", message])
+  assert.equal(result.status, 1)
+  assert.equal(Model.isNoCalendarsError(result.stderr), true)
 })
