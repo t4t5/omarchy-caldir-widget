@@ -54,8 +54,8 @@ export function normalizedEvent(raw, calendarColors) {
     : ""
 
   return {
-    instance_id: text(raw.instance_id),
     uid: text(raw.uid),
+    recurrence_id: text(raw.recurrence_id),
     calendar,
     calendarColor,
     title: text(raw.title).trim() || "Untitled event",

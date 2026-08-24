@@ -35,35 +35,31 @@ assert_output "open $video_url" \
 assert_output \
   "open rencal://event?uid=person%40example.com" \
   EVENT_UID="person@example.com" \
-  EVENT_INSTANCE_ID="person@example.com" \
   "$handler" --print calendar
 
 uid="event@example.com"
-recurrence_id="TZID=Europe/Oslo:20260821T160000"
+recurrence_id="2026-08-21T16:00:00+02:00"
 assert_output \
-  "open rencal://event?uid=event%40example.com&recurrence-id=TZID%3DEurope%2FOslo%3A20260821T160000" \
+  "open rencal://event?uid=event%40example.com&recurrence-id=2026-08-21T16%3A00%3A00%2B02%3A00" \
   EVENT_UID="$uid" \
-  EVENT_INSTANCE_ID="${uid}__${recurrence_id}" \
+  EVENT_RECURRENCE_ID="$recurrence_id" \
   "$handler" --print calendar
 
 assert_output \
   "open rencal://event?uid=part__two%40example.com" \
   EVENT_UID="part__two@example.com" \
-  EVENT_INSTANCE_ID="part__two@example.com" \
   "$handler" --print calendar
 
-# UIDs are compared as plain strings, even when they contain Lua pattern magic.
 magic_uid="event.+%[1]@example.com"
 assert_output \
   "open rencal://event?uid=event.%2B%25%5B1%5D%40example.com&recurrence-id=next%2Fone" \
   EVENT_UID="$magic_uid" \
-  EVENT_INSTANCE_ID="${magic_uid}__next/one" \
+  EVENT_RECURRENCE_ID="next/one" \
   "$handler" --print calendar
 
 assert_output \
   "open rencal://event?uid=event%40example.com" \
   EVENT_UID="event@example.com" \
-  EVENT_INSTANCE_ID="event@example.com" \
   EVENT_CONFERENCE_URL="$video_url" \
   "$handler" --print calendar
 
@@ -72,7 +68,7 @@ PATH="$temp_dir/bin:$PATH" OPEN_EVENT_CONFIG="$no_config" XDG_OPEN_LOG="$open_lo
   EVENT_CONFERENCE_URL="$video_url" \
   "$handler" join
 PATH="$temp_dir/bin:$PATH" OPEN_EVENT_CONFIG="$no_config" XDG_OPEN_LOG="$open_log" \
-  EVENT_UID="person@example.com" EVENT_INSTANCE_ID="person@example.com" \
+  EVENT_UID="person@example.com" \
   "$handler" calendar
 
 mapfile -t opened_urls < "$open_log"
@@ -94,7 +90,7 @@ failed_stderr="$temp_dir/failed.stderr"
 failed_status=0
 PATH="$temp_dir/bin:$PATH" OPEN_EVENT_CONFIG="$no_config" \
   XDG_OPEN_LOG="$failed_log" XDG_OPEN_EXIT=17 \
-  EVENT_UID="person@example.com" EVENT_INSTANCE_ID="person@example.com" \
+  EVENT_UID="person@example.com" \
   "$handler" calendar 2> "$failed_stderr" || failed_status=$?
 if [[ "$failed_status" -ne 17 ]]; then
   printf 'expected a failed rencal open to exit 17, got %s\n' \
@@ -114,7 +110,7 @@ grep -q 'open.lua' "$failed_stderr"
 blocking_log="$temp_dir/blocking.log"
 PATH="$temp_dir/bin:$PATH" OPEN_EVENT_CONFIG="$no_config" \
   XDG_OPEN_LOG="$blocking_log" XDG_OPEN_BLOCK_SECONDS=5 \
-  EVENT_UID="person@example.com" EVENT_INSTANCE_ID="person@example.com" \
+  EVENT_UID="person@example.com" \
   timeout 2 "$handler" calendar
 [[ "$(wc -l < "$blocking_log")" -eq 1 ]] || {
   echo "blocking xdg-open was not invoked exactly once" >&2

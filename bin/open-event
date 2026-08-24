@@ -38,7 +38,7 @@ end
 
 event = {
   uid = env("EVENT_UID"),
-  instance_id = env("EVENT_INSTANCE_ID"),
+  recurrence_id = env("EVENT_RECURRENCE_ID"),
   title = env("EVENT_TITLE"),
   conference_url = env("EVENT_CONFERENCE_URL"),
 }
@@ -91,19 +91,10 @@ end
 
 function open_rencal(opened_event)
   local uid = opened_event.uid or ""
-  local instance_id = opened_event.instance_id
-  local prefix = uid .. "__"
-  local recurrence_id = nil
-
-  if instance_id ~= nil and instance_id:sub(1, #prefix) == prefix then
-    recurrence_id = instance_id:sub(#prefix + 1)
-    if recurrence_id == "" then
-      recurrence_id = nil
-    end
-  end
+  local recurrence_id = opened_event.recurrence_id
 
   local url = "rencal://event?uid=" .. urlencode(uid)
-  if recurrence_id ~= nil then
+  if recurrence_id ~= nil and recurrence_id ~= "" then
     url = url .. "&recurrence-id=" .. urlencode(recurrence_id)
   end
   open_url(url)

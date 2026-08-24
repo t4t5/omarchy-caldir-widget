@@ -8,8 +8,8 @@ const NOW = new Date("2026-08-19T10:00:00+01:00")
 function event(start, extra = {}) {
   const startMs = Date.parse(start)
   return {
-    instance_id: start,
     uid: start,
+    recurrence_id: null,
     calendar: "personal",
     title: "Event",
     all_day: false,
@@ -47,11 +47,14 @@ test("parseAgenda attaches the matching calendar color", () => {
     { slug: "personal", color: "#9fe1e7" }
   ]))
   const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-19T11:00:00+01:00"),
+    event("2026-08-19T11:00:00+01:00", {
+      recurrence_id: "2026-08-19T11:00:00+01:00"
+    }),
     event("2026-08-19T12:00:00+01:00", { calendar: "unknown" })
   ]), colors)
 
   assert.equal(parsed[0].calendarColor, "#9fe1e7")
+  assert.equal(parsed[0].recurrence_id, "2026-08-19T11:00:00+01:00")
   assert.equal(parsed[1].calendarColor, "")
 })
 

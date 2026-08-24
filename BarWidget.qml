@@ -207,7 +207,7 @@ BarWidget {
   function handlerEnvironment(event) {
     return {
       "EVENT_UID": eventValue(event.uid),
-      "EVENT_INSTANCE_ID": eventValue(event.instance_id),
+      "EVENT_RECURRENCE_ID": eventValue(event.recurrence_id),
       "EVENT_TITLE": eventValue(event.title),
       "EVENT_CONFERENCE_URL": eventValue(event.conferenceUrl)
     }
