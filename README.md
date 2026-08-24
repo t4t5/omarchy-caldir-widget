@@ -26,9 +26,9 @@ This will add the widget to `~/.config/omarchy/shell.json` as:
 }
 ```
 
-## Usage
-
 The widget uses [caldir-cli](https://caldir.org) to read your calendar data (requires v0.12.1 or higher).
+
+## Usage
 
 See the caldir docs for [how to connect a calendar](https://caldir.org/quickstart/).
 
@@ -66,49 +66,62 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 | Setting | Default | Purpose |
 | --- | ---: | --- |
 | `daysAhead` | `2` | Number of future schedule days to display |
-| `openScript` | `""` | Path to a custom event-open script |
 
 ### Customizing event opening
 
-Every row click and hero action invokes an executable as `open-event <action>`.
-The action is `auto` for a row, `join` for Join or bar right-click, and
-`calendar` for Open in Calendar. The bundled script uses `auto` to choose a
-video link when present and rencal otherwise. `join` requires a detected video
-URL, while `calendar` always selects the rencal deeplink. Both URL types are
-passed directly to `xdg-open`.
+By default, events with a detected video link open that link; everything else
+opens in renCal through a deeplink. The **Join Meeting** button and a
+right-click on the bar join the next meeting, while **Open in Calendar** always
+opens renCal.
 
-If `xdg-open` rejects a rencal deeplink, the handler exits with an error. It
-does not guess at a calendar provider or open a web-calendar fallback. Install
-rencal, or set `openScript` when a different policy is wanted.
+To customize this behavior, create
+`~/.config/omarchy/caldir/open.lua` and define `on_open`:
 
-Custom handlers receive the action as their first argument and four event
-values in the environment, so event text is never parsed as shell syntax:
-
-| Variable | Value |
-| --- | --- |
-| `EVENT_UID` | Event UID |
-| `EVENT_INSTANCE_ID` | Instance ID; recurring instances use `<uid>__<recurrence-id>` |
-| `EVENT_TITLE` | Event title |
-| `EVENT_CONFERENCE_URL` | Detected, unwrapped video URL, unchanged by the widget |
-
-To add custom behavior, copy [`bin/open-event`](bin/open-event) to a stable
-location, make it executable, edit it, and set `openScript` to the copy's
-absolute path. For example, insert this immediately before the copied
-handler launches `xdg-open` to start transcription before joining a meeting:
-
-```bash
-if [[ "$resolved_action" == "join" ]]; then
-  start-transcription --title "${EVENT_TITLE:-Meeting}"
-fi
+```lua
+function on_open(event, action)
+  if action == "join" then
+    exec { "start-transcription", "--title", event.title }
+  end
+  default_open(event, action)
+end
 ```
 
-The bundled handler also supports `--print` for testing. It prints the
-resolved action and URL without opening anything:
+The file does not need to be executable. Errors appear as desktop
+notifications, and calling `default_open` at the end keeps the stock behavior.
+
+The hook receives an `event` table. Every field is `nil` when absent:
+
+| Field | Value |
+| --- | --- |
+| `uid` | Event UID |
+| `instance_id` | Instance ID; recurring instances use `<uid>__<recurrence-id>` |
+| `title` | Event title |
+| `conference_url` | Detected, unwrapped video URL |
+
+Four global helper functions are available:
+
+| Function | Behavior |
+| --- | --- |
+| `default_open(event, action)` | Runs the bundled `join` or `calendar` policy |
+| `open_url(url)` | Opens a URL through `xdg-open` |
+| `open_rencal(event)` | Builds and opens the event's renCal deeplink |
+| `exec(command)` | Runs a command in the background; pass an argument table for shell-safe quoting or a shell command string |
+
+Use `--print` to see what a hook would run without executing anything.
+`OPEN_EVENT_CONFIG` lets you try a hook at another path:
 
 ```sh
-EVENT_UID='event@example.com' bin/open-event --print auto
-# calendar rencal://event?uid=event%40example.com
+EVENT_TITLE='Team sync' \
+EVENT_CONFERENCE_URL='https://meet.example.test/team-sync' \
+OPEN_EVENT_CONFIG=./my-open.lua \
+bin/open-event --print join
+# exec 'start-transcription' '--title' 'Team sync'
+# open https://meet.example.test/team-sync
 ```
+
+The default handler does not guess at a calendar provider or open a web
+calendar fallback when `xdg-open` rejects a renCal deeplink. Install renCal or
+use `open.lua` when a different policy is wanted.
 
 ## Contributing
 

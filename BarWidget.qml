@@ -201,10 +201,7 @@ BarWidget {
   }
 
   function handlerPath() {
-    var custom = String(setting("openScript", "") || "").trim()
-    return custom !== ""
-      ? custom
-      : Qt.resolvedUrl("bin/open-event").toString().replace("file://", "")
+    return Qt.resolvedUrl("bin/open-event").toString().replace("file://", "")
   }
 
   function handlerEnvironment(event) {
@@ -232,7 +229,7 @@ BarWidget {
   }
 
   function openEvent(event) {
-    runHandler(event, "auto")
+    runHandler(event, event.conferenceUrl ? "join" : "calendar")
   }
 
   // Shape used by shell panel routing and the popout coordinator.
@@ -364,6 +361,15 @@ BarWidget {
     id: openProcess
     running: false
     clearEnvironment: false
+    stderr: StdioCollector { id: openStderr }
+    onExited: function(exitCode) {
+      if (exitCode === 0) return
+      var detail = Model.truncate(String(openStderr.text || "").trim(), 200)
+      Quickshell.execDetached([
+        "notify-send", "-u", "low", "Caldir widget",
+        detail !== "" ? detail : "Could not open the event."
+      ])
+    }
   }
 
   Loader {

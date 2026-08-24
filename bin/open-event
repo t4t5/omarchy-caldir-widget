@@ -1,89 +1,187 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env lua
 
-print_only=0
-action=""
+local function usage(message)
+  if message then
+    io.stderr:write("open-event: " .. message .. "\n")
+  end
+  io.stderr:write("usage: open-event [--print] <join|calendar>\n")
+  os.exit(2)
+end
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --print)
-      print_only=1
-      shift
-      ;;
-    auto|join|calendar)
-      [[ -z "$action" ]] || { echo "multiple actions supplied" >&2; exit 2; }
-      action="$1"
-      shift
-      ;;
-    *)
-      echo "unknown argument: $1" >&2
-      exit 2
-      ;;
-  esac
-done
+local print_only = false
+local action = nil
 
-[[ -n "$action" ]] || { echo "usage: open-event [--print] <auto|join|calendar>" >&2; exit 2; }
+for _, value in ipairs(arg) do
+  if value == "--print" then
+    print_only = true
+  elseif value == "join" or value == "calendar" then
+    if action ~= nil then
+      usage("multiple actions supplied")
+    end
+    action = value
+  else
+    usage("unknown argument: " .. value)
+  end
+end
 
-conference_url="${EVENT_CONFERENCE_URL:-}"
-uid="${EVENT_UID:-}"
-instance_id="${EVENT_INSTANCE_ID:-}"
+if action == nil then
+  usage()
+end
 
-urlencode() {
-  local text="$1" out="" char i
-  for (( i = 0; i < ${#text}; i++ )); do
-    char="${text:i:1}"
-    case "$char" in
-      [a-zA-Z0-9.~_-]) out+="$char" ;;
-      *) out+=$(printf '%%%02X' "'$char") ;;
-    esac
-  done
-  printf '%s' "$out"
+local function env(name)
+  local value = os.getenv(name)
+  if value == nil or value == "" then
+    return nil
+  end
+  return value
+end
+
+event = {
+  uid = env("EVENT_UID"),
+  instance_id = env("EVENT_INSTANCE_ID"),
+  title = env("EVENT_TITLE"),
+  conference_url = env("EVENT_CONFERENCE_URL"),
 }
 
-if [[ "$action" == "join" ]] || [[ "$action" == "auto" && -n "$conference_url" ]]; then
-  [[ -n "$conference_url" ]] || { echo "join requested but EVENT_CONFERENCE_URL is empty" >&2; exit 2; }
-  resolved_action="join"
-  url="$conference_url"
-else
-  resolved_action="calendar"
-  recurrence_id="${instance_id#"${uid}__"}"
-  if [[ "$recurrence_id" == "$instance_id" ]]; then
-    recurrence_id=""
-  fi
+local function shell_quote(value)
+  return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
+end
 
-  url="rencal://event?uid=$(urlencode "$uid")"
-  if [[ -n "$recurrence_id" ]]; then
-    url+="&recurrence-id=$(urlencode "$recurrence_id")"
-  fi
-fi
+local function urlencode(value)
+  return tostring(value or ""):gsub("[^%w.~_-]", function(char)
+    return string.format("%%%02X", string.byte(char))
+  end)
+end
 
-if (( print_only )); then
-  printf '%s %s\n' "$resolved_action" "$url"
-  exit 0
-fi
-
-# In generic-DE mode xdg-open runs the handler in the foreground and only
-# returns when the launched app exits, which would leave this script (and the
-# widget's click process) blocked for the app's whole lifetime. Launch it in
-# its own session and wait only briefly: a prompt non-zero exit is a rejection
-# worth reporting; still running after the grace period means launched.
-setsid xdg-open "$url" >/dev/null 2>&1 &
-xdg_open_pid=$!
-
-status=0
-for _ in {1..10}; do
-  kill -0 "$xdg_open_pid" 2>/dev/null || {
-    wait "$xdg_open_pid" || status=$?
-    break
-  }
+local LAUNCH = [[
+setsid xdg-open "$1" >/dev/null 2>&1 &
+pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  kill -0 "$pid" 2>/dev/null || { wait "$pid"; exit $?; }
   sleep 0.05
 done
+]]
 
-(( status != 0 )) || exit 0
+function open_url(url)
+  if url == nil or url == "" then
+    io.stderr:write("open-event: URL is empty\n")
+    os.exit(2)
+  end
 
-if [[ "$resolved_action" == "join" ]]; then
-  echo "open-event: conference URL could not be opened: $url" >&2
-else
-  echo "open-event: no application accepted the rencal deeplink; install rencal or configure openScript" >&2
-fi
-exit "$status"
+  if print_only then
+    print("open " .. url)
+    return
+  end
+
+  local ok, _, code = os.execute(
+    "sh -c " .. shell_quote(LAUNCH) .. " open-event " .. shell_quote(url))
+  if ok then
+    return
+  end
+
+  if url:sub(1, 9) == "rencal://" then
+    io.stderr:write(
+      "open-event: no application accepted the rencal deeplink; " ..
+      "install rencal or customize open.lua\n")
+  else
+    io.stderr:write("open-event: URL could not be opened: " .. url .. "\n")
+  end
+  os.exit(code or 1)
+end
+
+function open_rencal(opened_event)
+  local uid = opened_event.uid or ""
+  local instance_id = opened_event.instance_id
+  local prefix = uid .. "__"
+  local recurrence_id = nil
+
+  if instance_id ~= nil and instance_id:sub(1, #prefix) == prefix then
+    recurrence_id = instance_id:sub(#prefix + 1)
+    if recurrence_id == "" then
+      recurrence_id = nil
+    end
+  end
+
+  local url = "rencal://event?uid=" .. urlencode(uid)
+  if recurrence_id ~= nil then
+    url = url .. "&recurrence-id=" .. urlencode(recurrence_id)
+  end
+  open_url(url)
+end
+
+function default_open(opened_event, opened_action)
+  if opened_action == "join" then
+    if opened_event.conference_url == nil then
+      io.stderr:write(
+        "open-event: join requested but EVENT_CONFERENCE_URL is empty\n")
+      os.exit(2)
+    end
+    open_url(opened_event.conference_url)
+  elseif opened_action == "calendar" then
+    open_rencal(opened_event)
+  else
+    usage("unknown action: " .. tostring(opened_action))
+  end
+end
+
+function exec(command)
+  local rendered
+  if type(command) == "table" then
+    local words = {}
+    for index, word in ipairs(command) do
+      words[index] = shell_quote(word)
+    end
+    rendered = table.concat(words, " ")
+  elseif type(command) == "string" then
+    rendered = command
+  else
+    error("exec expects a command string or table", 2)
+  end
+
+  if print_only then
+    print("exec " .. rendered)
+    return
+  end
+
+  os.execute("setsid " .. rendered .. " >/dev/null 2>&1 &")
+end
+
+local function config_path()
+  local override = env("OPEN_EVENT_CONFIG")
+  if override ~= nil then
+    return override
+  end
+
+  local config_home = env("XDG_CONFIG_HOME")
+  if config_home == nil then
+    local home = env("HOME")
+    if home == nil then
+      return nil
+    end
+    config_home = home .. "/.config"
+  end
+  return config_home .. "/omarchy/caldir/open.lua"
+end
+
+local user_file = config_path()
+if user_file ~= nil then
+  local file = io.open(user_file, "r")
+  if file ~= nil then
+    file:close()
+    local loaded, load_error = pcall(dofile, user_file)
+    if not loaded then
+      io.stderr:write(
+        "open-event: error in " .. user_file .. ": " .. tostring(load_error) .. "\n")
+      os.exit(1)
+    end
+  end
+end
+
+local handler = on_open or default_open
+local opened, open_error = pcall(handler, event, action)
+if not opened then
+  local location = user_file or "open.lua"
+  io.stderr:write(
+    "open-event: error in " .. location .. ": " .. tostring(open_error) .. "\n")
+  os.exit(1)
+end
