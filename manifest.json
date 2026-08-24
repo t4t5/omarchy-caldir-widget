@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "id": "org.ren.caldir",
-  "name": "Omarchy Caldir Widget",
+  "name": "Caldir Calendar",
   "version": "1.0.0",
   "author": "t4t5",
   "license": "MIT",
-  "description": "A caldir-powered meeting countdown and multi-day schedule",
+  "description": "Connect any calendar with caldir and see your next events in the bar.",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Omarchy Caldir Widget",
+    "displayName": "Caldir Calendar",
     "description": "Shows the next meeting in the bar and a schedule on click",
     "category": "Productivity",
     "allowMultiple": false,
