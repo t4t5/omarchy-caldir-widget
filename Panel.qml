@@ -714,6 +714,23 @@ Panel {
                         opacity: ended ? 0.45 : 1.0
                         implicitHeight: Math.max(Style.space(32), eventLayout.implicitHeight + Style.space(8))
 
+                        Item {
+                          id: calendarMarker
+                          anchors.left: parent.left
+                          anchors.leftMargin: Style.space(6)
+                          anchors.verticalCenter: parent.verticalCenter
+                          width: Style.space(6)
+                          height: parent.height - Style.space(8)
+
+                          Rectangle {
+                            anchors.centerIn: parent
+                            width: eventRow.meeting.all_day ? Style.space(6) : Style.space(2)
+                            height: eventRow.meeting.all_day ? width : calendarMarker.height
+                            radius: width / 2
+                            color: eventRow.meeting.calendarColor || Color.accent
+                          }
+                        }
+
                         MouseArea {
                           id: rowMouse
                           anchors.fill: parent
@@ -733,7 +750,7 @@ Panel {
                           anchors.left: parent.left
                           anchors.right: parent.right
                           anchors.verticalCenter: parent.verticalCenter
-                          anchors.leftMargin: Style.space(10)
+                          anchors.leftMargin: Style.space(20)
                           anchors.rightMargin: Style.space(10)
                           spacing: Style.space(8)
 

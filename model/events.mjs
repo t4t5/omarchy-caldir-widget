@@ -8,7 +8,28 @@ function lower(value) {
   return text(value).trim().toLowerCase()
 }
 
-export function normalizedEvent(raw) {
+function validCalendarColor(value) {
+  const color = text(value).trim()
+  return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : ""
+}
+
+export function parseCalendarColors(stdout) {
+  const parsed = JSON.parse(text(stdout))
+  if (!Array.isArray(parsed)) throw new Error("caldir output must be a JSON array")
+
+  const colors = Object.create(null)
+  for (let i = 0; i < parsed.length; i++) {
+    const calendar = parsed[i]
+    if (!calendar || typeof calendar !== "object") continue
+
+    const slug = text(calendar.slug).trim()
+    const color = validCalendarColor(calendar.color)
+    if (slug !== "" && color !== "") colors[slug] = color
+  }
+  return colors
+}
+
+export function normalizedEvent(raw, calendarColors) {
   if (!raw || typeof raw !== "object") return null
 
   const startMs = Date.parse(raw.start)
@@ -27,10 +48,16 @@ export function normalizedEvent(raw) {
     x_properties: Array.isArray(raw.x_properties) ? raw.x_properties : []
   })
 
+  const calendar = text(raw.calendar)
+  const calendarColor = calendarColors && typeof calendarColors === "object"
+    ? validCalendarColor(calendarColors[calendar])
+    : ""
+
   return {
     instance_id: text(raw.instance_id),
     uid: text(raw.uid),
-    calendar: text(raw.calendar),
+    calendar,
+    calendarColor,
     title: text(raw.title).trim() || "Untitled event",
     all_day: raw.all_day === true,
     start: text(raw.start),
@@ -56,13 +83,13 @@ function compareEvents(a, b) {
 }
 
 // Invalid JSON is exceptional so the QML caller can retain last-good data.
-export function parseAgenda(stdout) {
+export function parseAgenda(stdout, calendarColors) {
   const parsed = JSON.parse(text(stdout))
   if (!Array.isArray(parsed)) throw new Error("caldir output must be a JSON array")
 
   const events = []
   for (let i = 0; i < parsed.length; i++) {
-    const event = normalizedEvent(parsed[i])
+    const event = normalizedEvent(parsed[i], calendarColors)
     if (event) events.push(event)
   }
   events.sort(compareEvents)

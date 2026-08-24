@@ -30,6 +30,31 @@ test("only caldir's missing-calendar response selects the setup state", () => {
   assert.equal(Model.isNoCalendarsError("permission denied"), false)
 })
 
+test("calendar colors are keyed by slug and invalid entries are ignored", () => {
+  const colors = Model.parseCalendarColors(JSON.stringify([
+    { slug: "personal", color: "#F6BF26" },
+    { slug: "work", color: "not-a-color" },
+    null
+  ]))
+
+  assert.equal(colors.personal, "#f6bf26")
+  assert.equal(colors.work, undefined)
+  assert.throws(() => Model.parseCalendarColors('{"calendars":[]}'), /JSON array/)
+})
+
+test("parseAgenda attaches the matching calendar color", () => {
+  const colors = Model.parseCalendarColors(JSON.stringify([
+    { slug: "personal", color: "#9fe1e7" }
+  ]))
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00"),
+    event("2026-08-19T12:00:00+01:00", { calendar: "unknown" })
+  ]), colors)
+
+  assert.equal(parsed[0].calendarColor, "#9fe1e7")
+  assert.equal(parsed[1].calendarColor, "")
+})
+
 test("parseAgenda normalizes and sorts a bare caldir array", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T12:00:00+01:00", { title: "Later" }),

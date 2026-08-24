@@ -17,6 +17,7 @@ BarWidget {
 
   property var scheduleGroups: []
   property var nextMeeting: null
+  property var calendarColors: ({})
   property string loadError: ""
   property bool needsCalendarSetup: false
   property string caldirState: "checking"
@@ -42,13 +43,18 @@ BarWidget {
     ]
   }
 
+  function startDataRefresh() {
+    calendarProcess.command = [caldirExecutable, "calendars", "--json"]
+    calendarProcess.running = true
+  }
+
   // The binary and its supported version are detected once; refreshes reuse
   // the cached path until an install or update requires another check.
   function refresh() {
-    if (caldirCheckProcess.running || agendaProcess.running || caldirVersionCheck.running) return
+    if (caldirCheckProcess.running || calendarProcess.running
+        || agendaProcess.running || caldirVersionCheck.running) return
     if (caldirState === "ready" && caldirExecutable !== "") {
-      agendaProcess.command = agendaCommand()
-      agendaProcess.running = true
+      startDataRefresh()
       return
     }
     caldirCheckProcess.command = ["which", "caldir"]
@@ -82,6 +88,18 @@ BarWidget {
     }
 
     caldirState = "ready"
+    startDataRefresh()
+  }
+
+  function finishCalendarRefresh(exitCode) {
+    calendarColors = ({})
+    if (exitCode === 0) {
+      try {
+        calendarColors = Model.parseCalendarColors(calendarStdout.text || "")
+      } catch (error) {
+        // Calendar colors are decorative; agenda loading should still proceed.
+      }
+    }
     agendaProcess.command = agendaCommand()
     agendaProcess.running = true
   }
@@ -127,7 +145,7 @@ BarWidget {
       }
     } else {
       try {
-        events = Model.parseAgenda(agendaStdout.text || "")
+        events = Model.parseAgenda(agendaStdout.text || "", calendarColors)
         needsCalendarSetup = false
         loadError = ""
       } catch (error) {
@@ -254,6 +272,16 @@ BarWidget {
       waitForEnd: true
     }
     onExited: function(exitCode) { root.finishCaldirCheck(exitCode) }
+  }
+
+  Process {
+    id: calendarProcess
+    running: false
+    stdout: StdioCollector {
+      id: calendarStdout
+      waitForEnd: true
+    }
+    onExited: function(exitCode) { root.finishCalendarRefresh(exitCode) }
   }
 
   Process {

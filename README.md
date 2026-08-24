@@ -4,9 +4,10 @@ An Omarchy Quattro bar widget that shows the next meeting and a live countdown.
 Click it for a next-meeting hero and multi-day schedule, or right-click to join
 the next video meeting.
 
-The widget runs `caldir events --json` against local calendar files. It does
-not parse ICS, store credentials, or contact a calendar provider. Sync is kept
-separate through `caldir pull`.
+The widget runs `caldir events --json` against local calendar files and uses
+`caldir calendars --json` for calendar colors. It does not parse ICS, store
+credentials, or contact a calendar provider. Sync is kept separate through
+`caldir pull`.
 
 ## Requirements
 
@@ -68,7 +69,8 @@ just uninstall
 - Right-click joins the next video meeting; if none exists, it opens the panel.
 - Middle-click runs `caldir pull` and refreshes local data when it finishes.
 - The sync button and the `s` keyboard shortcut while the panel is open do the
-  same. Automatic refreshes only re-read local caldir data with `caldir events`.
+  same. Automatic refreshes only re-read local caldir data with `caldir events`
+  and `caldir calendars`.
 - When the next-meeting hero is shown, keyboard focus starts on Join Meeting.
   Left/Right or `h`/`l` switches between the hero actions, while Up/Down or `j`/`k` moves
   between the hero and schedule events. Enter activates the focused action.
@@ -81,8 +83,9 @@ unanswered invitations stay in the schedule, shown dimmed and italic, but never
 drive the bar. The schedule includes all events, while the bar and next-meeting
 hero only follow events with a supported video URL. Multi-day events appear on
 each local calendar day they occupy, starting with today; event end dates are
-treated as exclusive. Events that already ended today remain in the schedule, dimmed with
-a check mark.
+treated as exclusive. Schedule rows use their calendar color as a slim bar for
+timed events or a dot for all-day events. Events that already ended today remain
+in the schedule, dimmed with a check mark.
 
 The bar meeting follows MeetingBar's selection rules: a meeting with under a
 minute left is never shown, and a meeting in progress hands the bar to the

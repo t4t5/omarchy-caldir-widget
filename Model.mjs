@@ -14,6 +14,7 @@ export {
 
 export {
   normalizedEvent,
+  parseCalendarColors,
   parseAgenda
 } from "./model/events.mjs"
 
