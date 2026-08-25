@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs"
+    "test": "TZ=Europe/London node --test tests/*.test.mjs"
   }
 }

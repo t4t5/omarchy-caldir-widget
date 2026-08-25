@@ -19,7 +19,9 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "daysAhead": 2
+      "daysAhead": 2,
+      "lookaheadMinutes": 30,
+      "barEvents": "Meetings"
     },
     "schema": [
       {
@@ -29,6 +31,27 @@
         "min": 1,
         "max": 30,
         "defaultValue": 2
+      },
+      {
+        "key": "lookaheadMinutes",
+        "type": "integer",
+        "label": "Lookahead (minutes)",
+        "min": 1,
+        "max": 1440,
+        "step": 5,
+        "defaultValue": 30,
+        "description": "How long before it starts an event appears in the bar."
+      },
+      {
+        "key": "barEvents",
+        "type": "enum",
+        "label": "Events shown in the bar",
+        "options": [
+          "Meetings",
+          "All"
+        ],
+        "defaultValue": "Meetings",
+        "description": "Meetings shows only events with a detected video link. All also shows events without one."
       }
     ]
   }

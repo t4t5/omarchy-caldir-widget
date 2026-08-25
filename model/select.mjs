@@ -1,5 +1,11 @@
 import { MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
 import { daySectionDate, daySectionTitle } from "./format.mjs"
+import {
+  BAR_EVENTS_ALL,
+  normalizeBarEvents,
+  normalizeDaysAhead,
+  normalizeLookaheadMinutes
+} from "./settings.mjs"
 
 // The selectors below never sort: events arrive in parseAgenda order (start
 // ascending, longest first on ties), which filtering preserves.
@@ -44,7 +50,7 @@ function occupiedLocalDays(event, rangeStart, rangeEnd) {
   return days
 }
 
-function buildUpcoming(events, current) {
+function buildUpcoming(events, current, requireConferenceUrl) {
   const upcoming = []
 
   for (let i = 0; i < events.length; i++) {
@@ -53,7 +59,7 @@ function buildUpcoming(events, current) {
     if (event.endMs < current) continue
     if (event.all_day === true) continue
     if (event.tentative === true) continue
-    if (!event.conferenceUrl) continue
+    if (requireConferenceUrl && !event.conferenceUrl) continue
     upcoming.push(event)
   }
 
@@ -61,24 +67,26 @@ function buildUpcoming(events, current) {
 }
 
 // Ported from MeetingBar's EventSelection: an event with under a minute left
-// is never "next" (grace window), future meetings only appear during the 30
-// minutes before they start, tentative invitations and events without a video
-// link stay off the bar, and a running meeting hands the bar to the following
-// one once it starts within ten minutes. Unlike MeetingBar, the handover only
-// replaces a pick that is already in progress, so of two future meetings the
-// earlier one always wins.
+// is never "next" (grace window), future events only appear during the
+// lookahead window before they start, tentative invitations stay off the bar,
+// and a running event hands the bar to the following one once it starts within
+// ten minutes. Unlike MeetingBar, the handover only replaces a pick that is
+// already in progress, so of two future events the earlier one always wins.
 const NEXT_GRACE_MS = MINUTE_MS
-const NEXT_LOOKAHEAD_MS = 30 * MINUTE_MS
 const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
-export function nextMeeting(events, now) {
+export function nextMeeting(events, now, options) {
+  const settings = options || {}
+  const lookaheadMs = normalizeLookaheadMinutes(settings.lookaheadMinutes) * MINUTE_MS
+  const requireConferenceUrl = normalizeBarEvents(settings.barEvents) !== BAR_EVENTS_ALL
+
   const current = now.getTime()
-  const candidates = buildUpcoming(events, current)
+  const candidates = buildUpcoming(events, current, requireConferenceUrl)
 
   let result = null
   for (let i = 0; i < candidates.length; i++) {
     const event = candidates[i]
-    if (event.startMs > current + NEXT_LOOKAHEAD_MS) break
+    if (event.startMs > current + lookaheadMs) break
     if (event.endMs <= current + NEXT_GRACE_MS) continue
     if (!result) {
       result = event
@@ -91,10 +99,18 @@ export function nextMeeting(events, now) {
   return result
 }
 
+// A list rather than a set of flags, so the panel's selected action is an index
+// and an unavailable action is absent rather than present-but-invalid.
+export function heroActions(event) {
+  if (!event) return []
+  return event.conferenceUrl ? ["join", "calendar"] : ["calendar"]
+}
+
 // The schedule keeps events that already ended today so the panel can dim
 // them; occupiedLocalDays clips everything to [today, today + daysAhead].
 export function buildScheduleGroups(events, now, options) {
-  const daysAhead = options.daysAhead
+  const settings = options || {}
+  const daysAhead = normalizeDaysAhead(settings.daysAhead)
   const byKey = {}
   const rangeStart = localDay(now)
   const rangeEnd = addLocalDays(rangeStart, daysAhead)

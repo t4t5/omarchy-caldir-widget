@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 
 import * as Model from "../Model.mjs"
@@ -357,6 +358,147 @@ test("the schedule keeps events that already ended today", () => {
   const groups = Model.buildScheduleGroups(parsed, NOW, { daysAhead: 3 })
   assert.deepEqual(groups.map(group => group.key), ["2026-08-19"])
   assert.deepEqual(groups[0].items.map(item => item.title), ["Done", "Later"])
+})
+
+test("the schedule falls back to the default range when daysAhead is unusable", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:00:00+01:00", { title: "Today" }),
+    event("2026-08-21T11:00:00+01:00", { title: "Two days out" }),
+    event("2026-08-24T11:00:00+01:00", { title: "Five days out" })
+  ]))
+  const expected = ["2026-08-19", "2026-08-21"]
+
+  assert.deepEqual(Model.buildScheduleGroups(parsed, NOW).map(group => group.key), expected)
+  assert.deepEqual(Model.buildScheduleGroups(parsed, NOW, {}).map(group => group.key), expected)
+  assert.deepEqual(
+    Model.buildScheduleGroups(parsed, NOW, { daysAhead: "nonsense" }).map(group => group.key),
+    expected)
+})
+
+test("a wider lookahead promotes a meeting the default window hides", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T11:30:00+01:00", {
+      title: "Ninety minutes out",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW), null)
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadMinutes: 90 }).title, "Ninety minutes out")
+})
+
+test("a narrower lookahead hides a meeting the default window shows", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:20:00+01:00", {
+      title: "Twenty minutes out",
+      description: "https://meet.google.com/aaa-bbbb-ccc"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW).title, "Twenty minutes out")
+  assert.equal(Model.nextMeeting(parsed, NOW, { lookaheadMinutes: 10 }), null)
+})
+
+test("integer settings fall back to their default and clamp to their bounds", () => {
+  assert.equal(Model.normalizeLookaheadMinutes(undefined), Model.LOOKAHEAD_MINUTES.defaultValue)
+  assert.equal(Model.normalizeLookaheadMinutes(null), Model.LOOKAHEAD_MINUTES.defaultValue)
+  assert.equal(Model.normalizeLookaheadMinutes(""), Model.LOOKAHEAD_MINUTES.defaultValue)
+  assert.equal(Model.normalizeLookaheadMinutes("   "), Model.LOOKAHEAD_MINUTES.defaultValue)
+  assert.equal(Model.normalizeLookaheadMinutes("not-a-number"), Model.LOOKAHEAD_MINUTES.defaultValue)
+  assert.equal(Model.normalizeLookaheadMinutes(0), Model.LOOKAHEAD_MINUTES.min)
+  assert.equal(Model.normalizeLookaheadMinutes(-90), Model.LOOKAHEAD_MINUTES.min)
+  assert.equal(Model.normalizeLookaheadMinutes(99999), Model.LOOKAHEAD_MINUTES.max)
+  assert.equal(Model.normalizeLookaheadMinutes("45"), 45)
+  assert.equal(Model.normalizeLookaheadMinutes(45.9), 45)
+
+  // daysAhead reaches the model from the same hand-editable file, so it is
+  // normalized on the same terms rather than trusted.
+  assert.equal(Model.normalizeDaysAhead(undefined), Model.DAYS_AHEAD.defaultValue)
+  assert.equal(Model.normalizeDaysAhead("nonsense"), Model.DAYS_AHEAD.defaultValue)
+  assert.equal(Model.normalizeDaysAhead(0), Model.DAYS_AHEAD.min)
+  assert.equal(Model.normalizeDaysAhead(9000), Model.DAYS_AHEAD.max)
+  assert.equal(Model.normalizeDaysAhead("7"), 7)
+})
+
+test("barEvents All puts an event without a video link on the bar", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:10:00+01:00", { title: "No link" }),
+    event("2026-08-19T10:20:00+01:00", {
+      title: "Video",
+      description: "https://meet.google.com/abc-defg-hij"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "All" }).title, "No link")
+  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "Meetings" }).title, "Video")
+})
+
+test("barEvents All still honors the declined, all-day, and tentative filters", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:05:00+01:00", { title: "Declined", rsvp: "declined" }),
+    event("2026-08-19T10:07:00+01:00", { title: "Tentative", rsvp: "tentative" }),
+    event("2026-08-19T10:09:00+01:00", { title: "Needs action", rsvp: "needs-action" }),
+    { ...event("2026-08-19T10:11:00+01:00", { title: "All day" }), all_day: true },
+    event("2026-08-19T10:13:00+01:00", { title: "Plain" })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "All" }).title, "Plain")
+})
+
+test("barEvents normalizes to a manifest option and falls back to the default", () => {
+  assert.equal(Model.normalizeBarEvents(undefined), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents(null), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents(""), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents("nonsense"), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents("Meetings"), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents(" meetings "), Model.BAR_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeBarEvents("All"), Model.BAR_EVENTS_ALL)
+  assert.equal(Model.normalizeBarEvents(" all "), Model.BAR_EVENTS_ALL)
+  assert.equal(Model.normalizeBarEvents("ALL"), Model.BAR_EVENTS_ALL)
+})
+
+test("the settings declarations stay in step with the manifest schema", () => {
+  const manifest = JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url), "utf8"))
+  const schema = manifest.barWidget.schema
+  const defaults = manifest.barWidget.defaults
+
+  for (const spec of [Model.DAYS_AHEAD, Model.LOOKAHEAD_MINUTES, Model.BAR_EVENTS]) {
+    const entry = schema.find(item => item.key === spec.key)
+    assert.ok(entry, `manifest.json is missing a schema entry for ${spec.key}`)
+    assert.equal(entry.defaultValue, spec.defaultValue)
+    assert.equal(defaults[spec.key], spec.defaultValue)
+    if (spec.options) assert.deepEqual(entry.options, spec.options)
+    else assert.deepEqual([entry.min, entry.max], [spec.min, spec.max])
+  }
+})
+
+test("the hero card offers joining only when a video link was detected", () => {
+  const [linked, plain] = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:10:00+01:00", {
+      title: "Video",
+      description: "https://meet.google.com/abc-defg-hij"
+    }),
+    event("2026-08-19T10:20:00+01:00", { title: "Room booking" })
+  ]))
+
+  assert.deepEqual(Model.heroActions(linked), ["join", "calendar"])
+  assert.deepEqual(Model.heroActions(plain), ["calendar"])
+  assert.deepEqual(Model.heroActions(null), [])
+  assert.deepEqual(Model.heroActions(undefined), [])
+})
+
+test("an omitted options object keeps the stock MeetingBar selection", () => {
+  const parsed = Model.parseAgenda(JSON.stringify([
+    event("2026-08-19T10:20:00+01:00", { title: "No link" }),
+    event("2026-08-19T10:25:00+01:00", {
+      title: "Video",
+      description: "https://meet.google.com/abc-defg-hij"
+    })
+  ]))
+
+  assert.equal(Model.nextMeeting(parsed, NOW).title, "Video")
+  assert.equal(Model.nextMeeting(parsed, NOW, undefined).title, "Video")
+  assert.equal(Model.nextMeeting(parsed, NOW, {}).title, "Video")
 })
 
 test("only video meetings drive the bar; the schedule keeps everything", () => {
