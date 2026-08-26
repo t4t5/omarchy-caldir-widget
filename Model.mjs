@@ -24,8 +24,20 @@ export {
 
 export {
   nextMeeting,
-  buildScheduleGroups
+  buildScheduleGroups,
+  heroActions
 } from "./model/select.mjs"
+
+export {
+  BAR_EVENTS_ALL,
+  BAR_EVENTS_MEETINGS,
+  BAR_EVENTS,
+  DAYS_AHEAD,
+  LOOKAHEAD_MINUTES,
+  normalizeHighlightEvents,
+  normalizeDaysAhead,
+  normalizeLookaheadMinutes
+} from "./model/settings.mjs"
 
 export {
   formatLabel,

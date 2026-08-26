@@ -12,8 +12,11 @@ BarWidget {
   id: root
   moduleName: "org.ren.caldir"
 
-  // The manifest schema types and bounds these settings.
-  readonly property int daysAhead: setting("daysAhead", 2)
+  // null lets the model supply the default, so it is declared in one place.
+  readonly property int daysAhead: Model.normalizeDaysAhead(setting("daysAhead", null))
+  readonly property int lookaheadMinutes: Model.normalizeLookaheadMinutes(setting("lookaheadMinutes", null))
+  readonly property string highlightEvents: Model.normalizeHighlightEvents(setting("highlightEvents", null))
+  readonly property bool showingAllEvents: highlightEvents === Model.HIGHLIGHT_EVENTS_ALL
 
   property var scheduleGroups: []
   property var nextMeeting: null
@@ -144,7 +147,10 @@ BarWidget {
 
   function setEvents(events) {
     scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
-    nextMeeting = Model.nextMeeting(events, now)
+    nextMeeting = Model.nextMeeting(events, now, {
+      lookaheadMinutes: lookaheadMinutes,
+      highlightEvents: highlightEvents
+    })
   }
 
   function pull() {
@@ -417,7 +423,7 @@ BarWidget {
     if (caldirState === "unsupported") return Model.plainLine(loadError) + "\nClick for update instructions"
     if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
     if (loadError !== "") return Model.plainLine(loadError)
-    if (!nextMeeting) return "No upcoming meetings"
+    if (!nextMeeting) return showingAllEvents ? "No upcoming events" : "No upcoming meetings"
     var title = Model.plainLine(nextMeeting.title)
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
     var status = Model.relativeStatus(nextMeeting, now, timeFormat)

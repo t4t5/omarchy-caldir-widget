@@ -481,7 +481,8 @@ Panel {
                       var parts = []
                       var duration = root.next ? Model.formatDuration(root.next.startMs, root.next.endMs) : ""
                       if (duration) parts.push(duration)
-                      parts.push("  " + Model.conferenceName(root.next ? root.next.conferenceUrl : ""))
+                      var conferenceUrl = root.next ? root.next.conferenceUrl : ""
+                      if (conferenceUrl) parts.push("  " + Model.conferenceName(conferenceUrl))
                       return parts.join("  ·  ")
                     }
                     textFormat: Text.PlainText
@@ -524,9 +525,9 @@ Panel {
 
                   Button {
                     id: joinButton
-                    readonly property bool keyboardFocused: navigation.focusSection === "hero"
-                      && navigation.selectedHeroAction === 0
+                    readonly property bool keyboardFocused: navigation.heroAction === "join"
                     Layout.fillWidth: true
+                    visible: navigation.heroActions.indexOf("join") >= 0
                     text: "Join Meeting"
                     iconText: ""
                     selected: true
@@ -537,7 +538,7 @@ Panel {
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
                     onHovered: function(isHovered) {
-                      if (isHovered) navigation.selectHeroAction(0)
+                      if (isHovered) navigation.selectHeroAction("join")
                     }
                     onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.openEvent(root.next)
@@ -553,8 +554,7 @@ Panel {
 
                   Button {
                     id: calendarButton
-                    readonly property bool keyboardFocused: navigation.focusSection === "hero"
-                      && navigation.selectedHeroAction === 1
+                    readonly property bool keyboardFocused: navigation.heroAction === "calendar"
                     Layout.fillWidth: true
                     text: "Open in Calendar"
                     iconText: "󰃯"
@@ -566,7 +566,7 @@ Panel {
                     horizontalPadding: Style.space(12)
                     verticalPadding: Style.space(7)
                     onHovered: function(isHovered) {
-                      if (isHovered) navigation.selectHeroAction(1)
+                      if (isHovered) navigation.selectHeroAction("calendar")
                     }
                     onKeyboardFocusedChanged: if (keyboardFocused) root.scrollItemIntoView(heroBlock)
                     onClicked: root.openInCalendar(root.next)
@@ -721,10 +721,7 @@ Panel {
                           anchors.fill: parent
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
-                          onEntered: {
-                            navigation.focusSection = "events"
-                            navigation.selectedEventIndex = eventRow.navigationIndex
-                          }
+                          onEntered: navigation.focusEvent(eventRow.navigationIndex)
                           onClicked: root.openEvent(eventRow.meeting)
                         }
 
