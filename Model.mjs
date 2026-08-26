@@ -34,7 +34,7 @@ export {
   BAR_EVENTS,
   DAYS_AHEAD,
   LOOKAHEAD_MINUTES,
-  normalizeBarEvents,
+  normalizeHighlightEvents,
   normalizeDaysAhead,
   normalizeLookaheadMinutes
 } from "./model/settings.mjs"

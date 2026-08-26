@@ -63,7 +63,7 @@ Set your preferences in `~/.config/omarchy/shell.json`:
   "id": "org.ren.caldir",
   "daysAhead": 3,
   "lookaheadMinutes": 60,
-  "barEvents": "All"
+  "highlightEvents": "all"
 }
 ```
 
@@ -71,7 +71,7 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 | --- | ---: | --- |
 | `daysAhead` | `2` | Number of future schedule days to display |
 | `lookaheadMinutes` | `30` | How long before it starts an event appears in the bar (1-1440) |
-| `barEvents` | `"Meetings"` | `"Meetings"` shows only events with a detected video link. `"All"` also shows events without one |
+| `highlightEvents` | `"meetings"` | `"meetings"` shows only events with a detected video link. `"all"` also shows events without one |
 
 ### Choosing what reaches the bar
 
@@ -80,7 +80,7 @@ is within `lookaheadMinutes` of starting, and only when a video link was
 detected. Everything else stays in the panel.
 
 Raise `lookaheadMinutes` if you want more warning before a call, and set
-`barEvents` to `"All"` if your calendar carries meetings that have no link
+`highlightEvents` to `"all"` if your calendar carries meetings that have no link
 (a room booking, a recurring focus block, an off-site).
 
 Declined, all-day, and tentative events stay off the bar under both settings.

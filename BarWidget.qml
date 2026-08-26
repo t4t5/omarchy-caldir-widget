@@ -15,8 +15,8 @@ BarWidget {
   // null lets the model supply the default, so it is declared in one place.
   readonly property int daysAhead: Model.normalizeDaysAhead(setting("daysAhead", null))
   readonly property int lookaheadMinutes: Model.normalizeLookaheadMinutes(setting("lookaheadMinutes", null))
-  readonly property string barEvents: Model.normalizeBarEvents(setting("barEvents", null))
-  readonly property bool showingAllEvents: barEvents === Model.BAR_EVENTS_ALL
+  readonly property string highlightEvents: Model.normalizeHighlightEvents(setting("highlightEvents", null))
+  readonly property bool showingAllEvents: highlightEvents === Model.HIGHLIGHT_EVENTS_ALL
 
   property var scheduleGroups: []
   property var nextMeeting: null
@@ -149,7 +149,7 @@ BarWidget {
     scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
     nextMeeting = Model.nextMeeting(events, now, {
       lookaheadMinutes: lookaheadMinutes,
-      barEvents: barEvents
+      highlightEvents: highlightEvents
     })
   }
 

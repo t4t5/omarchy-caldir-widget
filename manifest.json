@@ -21,7 +21,7 @@
     "defaults": {
       "daysAhead": 2,
       "lookaheadMinutes": 30,
-      "barEvents": "Meetings"
+      "highlightEvents": "meetings"
     },
     "schema": [
       {
@@ -43,14 +43,14 @@
         "description": "How long before it starts an event appears in the bar."
       },
       {
-        "key": "barEvents",
+        "key": "highlightEvents",
         "type": "enum",
         "label": "Events shown in the bar",
         "options": [
-          "Meetings",
-          "All"
+          "meetings",
+          "all"
         ],
-        "defaultValue": "Meetings",
+        "defaultValue": "meetings",
         "description": "Meetings shows only events with a detected video link. All also shows events without one."
       }
     ]

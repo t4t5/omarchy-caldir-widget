@@ -1,8 +1,8 @@
 import { MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
 import { daySectionDate, daySectionTitle } from "./format.mjs"
 import {
-  BAR_EVENTS_ALL,
-  normalizeBarEvents,
+  HIGHLIGHT_EVENTS_ALL,
+  normalizeHighlightEvents,
   normalizeDaysAhead,
   normalizeLookaheadMinutes
 } from "./settings.mjs"
@@ -78,7 +78,7 @@ const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 export function nextMeeting(events, now, options) {
   const settings = options || {}
   const lookaheadMs = normalizeLookaheadMinutes(settings.lookaheadMinutes) * MINUTE_MS
-  const requireConferenceUrl = normalizeBarEvents(settings.barEvents) !== BAR_EVENTS_ALL
+  const requireConferenceUrl = normalizeHighlightEvents(settings.highlightEvents) !== HIGHLIGHT_EVENTS_ALL
 
   const current = now.getTime()
   const candidates = buildUpcoming(events, current, requireConferenceUrl)

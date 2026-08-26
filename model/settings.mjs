@@ -1,8 +1,8 @@
 // shell.json is hand-editable, so the manifest's types and bounds constrain
 // the settings UI but not the file. Everything is re-checked here.
 
-export const BAR_EVENTS_MEETINGS = "Meetings"
-export const BAR_EVENTS_ALL = "All"
+export const HIGHLIGHT_EVENTS_MEETINGS = "meetings"
+export const HIGHLIGHT_EVENTS_ALL = "all"
 
 export const DAYS_AHEAD = {
   key: "daysAhead",
@@ -18,10 +18,10 @@ export const LOOKAHEAD_MINUTES = {
   max: 1440
 }
 
-export const BAR_EVENTS = {
-  key: "barEvents",
-  defaultValue: BAR_EVENTS_MEETINGS,
-  options: [BAR_EVENTS_MEETINGS, BAR_EVENTS_ALL]
+export const HIGHLIGHT_EVENTS = {
+  key: "highlightEvents",
+  defaultValue: HIGHLIGHT_EVENTS_MEETINGS,
+  options: [HIGHLIGHT_EVENTS_MEETINGS, HIGHLIGHT_EVENTS_ALL]
 }
 
 // Unusable values fall back to the default; out-of-range ones clamp, on the
@@ -56,6 +56,6 @@ export function normalizeLookaheadMinutes(value) {
   return normalizeInteger(value, LOOKAHEAD_MINUTES)
 }
 
-export function normalizeBarEvents(value) {
-  return normalizeEnum(value, BAR_EVENTS)
+export function normalizeHighlightEvents(value) {
+  return normalizeEnum(value, HIGHLIGHT_EVENTS)
 }
