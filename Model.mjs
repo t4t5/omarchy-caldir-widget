@@ -29,9 +29,9 @@ export {
 } from "./model/select.mjs"
 
 export {
-  BAR_EVENTS_ALL,
-  BAR_EVENTS_MEETINGS,
-  BAR_EVENTS,
+  HIGHLIGHT_EVENTS_ALL,
+  HIGHLIGHT_EVENTS_MEETINGS,
+  HIGHLIGHT_EVENTS,
   DAYS_AHEAD,
   LOOKAHEAD_MINUTES,
   normalizeHighlightEvents,
