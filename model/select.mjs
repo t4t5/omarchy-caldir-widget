@@ -1,39 +1,37 @@
-import {
-  MINUTE_MS,
-  addWallDays,
-  viewerNowWallMs,
-  wallDateKey,
-  wallDay
-} from "./dates.mjs"
-import { wallDaySectionDate, wallDaySectionTitle } from "./format.mjs"
+import { MINUTE_MS, addLocalDays, localDateKey } from "./dates.mjs"
+import { daySectionDate, daySectionTitle } from "./format.mjs"
 
 // The selectors below never sort: events arrive in parseAgenda order (start
 // ascending, longest first on ties), which filtering preserves.
 
+function localDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
 function allDayDate(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""))
   if (!match) return null
-  const date = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
-  return isNaN(date) ? null : date
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return isNaN(date.getTime()) ? null : date
 }
 
 // Match rencal's agenda semantics: enumerate every viewer-local day occupied by
 // an event. Event ends are exclusive, so an all-day DTEND and a timed event
 // ending exactly at midnight do not occupy the end date.
 function occupiedLocalDays(event, rangeStart, rangeEnd) {
-  let first = event.all_day ? allDayDate(event.start) : wallDay(event.localStartMs)
-  let last = event.all_day ? allDayDate(event.end) : wallDay(event.localEndMs)
-  if (first === null || last === null || !isFinite(first) || !isFinite(last)) return []
+  let first = event.all_day ? allDayDate(event.start) : localDay(new Date(event.startMs))
+  let last = event.all_day ? allDayDate(event.end) : localDay(new Date(event.endMs))
+  if (!first || !last || isNaN(first.getTime()) || isNaN(last.getTime())) return []
 
   if (event.all_day) {
-    last = addWallDays(last, -1)
+    last = addLocalDays(last, -1)
   } else {
-    const end = new Date(event.localEndMs)
-    const endsAtMidnight = end.getUTCHours() === 0
-      && end.getUTCMinutes() === 0
-      && end.getUTCSeconds() === 0
-      && end.getUTCMilliseconds() === 0
-    if (endsAtMidnight && event.endMs > event.startMs) last = addWallDays(last, -1)
+    const end = new Date(event.endMs)
+    const endsAtMidnight = end.getHours() === 0
+      && end.getMinutes() === 0
+      && end.getSeconds() === 0
+      && end.getMilliseconds() === 0
+    if (endsAtMidnight && event.endMs > event.startMs) last = addLocalDays(last, -1)
   }
 
   if (last < first) last = first
@@ -42,7 +40,7 @@ function occupiedLocalDays(event, rangeStart, rangeEnd) {
   if (last < first) return []
 
   const days = []
-  for (let day = first; day <= last; day = addWallDays(day, 1)) days.push(day)
+  for (let day = first; day <= last; day = addLocalDays(day, 1)) days.push(day)
   return days
 }
 
@@ -98,20 +96,20 @@ export function nextMeeting(events, now) {
 export function buildScheduleGroups(events, now, options) {
   const daysAhead = options.daysAhead
   const byKey = {}
-  const rangeStart = wallDay(viewerNowWallMs(events.length > 0 ? events[0] : null, now))
-  const rangeEnd = addWallDays(rangeStart, daysAhead)
+  const rangeStart = localDay(now)
+  const rangeEnd = addLocalDays(rangeStart, daysAhead)
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i]
     const days = occupiedLocalDays(event, rangeStart, rangeEnd)
     for (let j = 0; j < days.length; j++) {
       const date = days[j]
-      const key = wallDateKey(date)
+      const key = localDateKey(date)
       if (!byKey[key]) {
         byKey[key] = {
           key: key,
-          title: wallDaySectionTitle(date, rangeStart),
-          dateTitle: wallDaySectionDate(date),
+          title: daySectionTitle(date.getTime(), now),
+          dateTitle: daySectionDate(date.getTime()),
           items: []
         }
       }

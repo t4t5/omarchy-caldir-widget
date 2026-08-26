@@ -70,30 +70,6 @@ test("parseAgenda normalizes and sorts a bare caldir array", () => {
   assert.equal(parsed[0].startMs, Date.parse("2026-08-19T11:00:00+01:00"))
 })
 
-test("viewer-local wall times override the long-lived process timezone", () => {
-  const parsed = Model.parseAgenda(JSON.stringify([
-    event("2026-08-26T12:00:00+01:00", {
-      title: "Get JLPT Eventbrite ticket",
-      _viewer: {
-        timezone: "America/Toronto",
-        current_offset_ms: -4 * 60 * Model.MINUTE_MS,
-        start_wall_ms: Date.UTC(2026, 7, 26, 7, 0),
-        end_wall_ms: Date.UTC(2026, 7, 26, 8, 0)
-      }
-    })
-  ]))
-  const now = new Date("2026-08-26T09:00:00Z")
-
-  assert.equal(Model.eventStartTime(parsed[0]), "07:00")
-  assert.equal(Model.eventTimeRange(parsed[0]), "07:00–08:00")
-  assert.equal(Model.meetingTimeLabelForEvent(parsed[0], now), "Today · 07:00–08:00")
-  assert.equal(Model.formatLabel(parsed[0], now), "Get JLPT Eventbrite… · 07:00")
-  assert.deepEqual(
-    Model.buildScheduleGroups(parsed, now, { daysAhead: 2 }).map(group => group.key),
-    ["2026-08-26"]
-  )
-})
-
 test("parseAgenda keeps declined events but drops invalid events", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T11:00:00+01:00"),
