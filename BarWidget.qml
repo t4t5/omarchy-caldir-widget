@@ -248,6 +248,7 @@ BarWidget {
     id: clock
     precision: SystemClock.Minutes
     onDateChanged: {
+      Date.timeZoneUpdated()
       root.now = date
       root.refresh()
     }
