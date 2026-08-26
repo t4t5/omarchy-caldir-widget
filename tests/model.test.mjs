@@ -420,7 +420,7 @@ test("integer settings fall back to their default and clamp to their bounds", ()
   assert.equal(Model.normalizeDaysAhead("7"), 7)
 })
 
-test("barEvents All puts an event without a video link on the bar", () => {
+test("highlightEvents all puts an event without a video link on the bar", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T10:10:00+01:00", { title: "No link" }),
     event("2026-08-19T10:20:00+01:00", {
@@ -429,11 +429,11 @@ test("barEvents All puts an event without a video link on the bar", () => {
     })
   ]))
 
-  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "All" }).title, "No link")
-  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "Meetings" }).title, "Video")
+  assert.equal(Model.nextMeeting(parsed, NOW, { highlightEvents: "all" }).title, "No link")
+  assert.equal(Model.nextMeeting(parsed, NOW, { highlightEvents: "meetings" }).title, "Video")
 })
 
-test("barEvents All still honors the declined, all-day, and tentative filters", () => {
+test("highlightEvents all still honors the declined, all-day, and tentative filters", () => {
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T10:05:00+01:00", { title: "Declined", rsvp: "declined" }),
     event("2026-08-19T10:07:00+01:00", { title: "Tentative", rsvp: "tentative" }),
@@ -442,19 +442,19 @@ test("barEvents All still honors the declined, all-day, and tentative filters", 
     event("2026-08-19T10:13:00+01:00", { title: "Plain" })
   ]))
 
-  assert.equal(Model.nextMeeting(parsed, NOW, { barEvents: "All" }).title, "Plain")
+  assert.equal(Model.nextMeeting(parsed, NOW, { highlightEvents: "all" }).title, "Plain")
 })
 
-test("barEvents normalizes to a manifest option and falls back to the default", () => {
-  assert.equal(Model.normalizeBarEvents(undefined), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents(null), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents(""), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents("nonsense"), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents("Meetings"), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents(" meetings "), Model.BAR_EVENTS_MEETINGS)
-  assert.equal(Model.normalizeBarEvents("All"), Model.BAR_EVENTS_ALL)
-  assert.equal(Model.normalizeBarEvents(" all "), Model.BAR_EVENTS_ALL)
-  assert.equal(Model.normalizeBarEvents("ALL"), Model.BAR_EVENTS_ALL)
+test("highlightEvents normalizes to a manifest option and falls back to the default", () => {
+  assert.equal(Model.normalizeHighlightEvents(undefined), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents(null), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents(""), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents("nonsense"), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents("Meetings"), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents(" meetings "), Model.HIGHLIGHT_EVENTS_MEETINGS)
+  assert.equal(Model.normalizeHighlightEvents("All"), Model.HIGHLIGHT_EVENTS_ALL)
+  assert.equal(Model.normalizeHighlightEvents(" all "), Model.HIGHLIGHT_EVENTS_ALL)
+  assert.equal(Model.normalizeHighlightEvents("ALL"), Model.HIGHLIGHT_EVENTS_ALL)
 })
 
 test("the settings declarations stay in step with the manifest schema", () => {
@@ -462,7 +462,7 @@ test("the settings declarations stay in step with the manifest schema", () => {
   const schema = manifest.barWidget.schema
   const defaults = manifest.barWidget.defaults
 
-  for (const spec of [Model.DAYS_AHEAD, Model.LOOKAHEAD_MINUTES, Model.BAR_EVENTS]) {
+  for (const spec of [Model.DAYS_AHEAD, Model.LOOKAHEAD_MINUTES, Model.HIGHLIGHT_EVENTS]) {
     const entry = schema.find(item => item.key === spec.key)
     assert.ok(entry, `manifest.json is missing a schema entry for ${spec.key}`)
     assert.equal(entry.defaultValue, spec.defaultValue)
