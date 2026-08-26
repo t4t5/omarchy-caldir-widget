@@ -31,9 +31,12 @@ export {
   formatLabel,
   relativeStatus,
   meetingTimeLabel,
+  meetingTimeLabelForEvent,
   formatDuration,
   hm,
   timeRange,
+  eventStartTime,
+  eventTimeRange,
   truncate,
   plainLine
 } from "./model/format.mjs"

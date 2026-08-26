@@ -8,6 +8,7 @@ default:
 test: check
   npm test
   bash tests/open-event.test.sh
+  python3 tests/localized-events.test.py
   omarchy plugin validate .
 
 # Check the code for linting errors:

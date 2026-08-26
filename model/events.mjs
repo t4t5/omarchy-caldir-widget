@@ -1,4 +1,5 @@
 import { getConferenceUrl } from "./conference.mjs"
+import { localWallMs } from "./dates.mjs"
 import {
   MAX_CALENDARS,
   MAX_COLOR_CHARS,
@@ -32,6 +33,12 @@ const RSVP_STATUSES = ["accepted", "declined", "tentative", "needs-action"]
 function validRsvp(value) {
   const rsvp = lower(limited(value, MAX_ENUM_CHARS))
   return RSVP_STATUSES.indexOf(rsvp) !== -1 ? rsvp : ""
+}
+
+function finiteNumber(value) {
+  if (value === undefined || value === null || value === "") return null
+  const number = Number(value)
+  return isFinite(number) ? number : null
 }
 
 export function parseCalendarColors(stdout) {
@@ -77,6 +84,10 @@ export function normalizedEvent(raw, calendarColors) {
   const calendarColor = calendarColors && typeof calendarColors === "object"
     ? validCalendarColor(calendarColors[calendar])
     : ""
+  const viewer = raw._viewer && typeof raw._viewer === "object" ? raw._viewer : null
+  const localizedStart = viewer ? finiteNumber(viewer.start_wall_ms) : null
+  const localizedEnd = viewer ? finiteNumber(viewer.end_wall_ms) : null
+  const viewerOffsetMs = viewer ? finiteNumber(viewer.current_offset_ms) : null
 
   return {
     uid: clamped(raw.uid, MAX_ID_CHARS),
@@ -95,6 +106,9 @@ export function normalizedEvent(raw, calendarColors) {
     recurring: raw.recurring === true,
     startMs,
     endMs,
+    localStartMs: localizedStart === null ? localWallMs(startMs) : localizedStart,
+    localEndMs: localizedEnd === null ? localWallMs(endMs) : localizedEnd,
+    viewerOffsetMs,
     conferenceUrl
   }
 }

@@ -1,4 +1,12 @@
-import { addLocalDays, localDateKey, MINUTE_MS } from "./dates.mjs"
+import {
+  addLocalDays,
+  addWallDays,
+  localDateKey,
+  localWallMs,
+  MINUTE_MS,
+  viewerNowWallMs,
+  wallDateKey
+} from "./dates.mjs"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -14,6 +22,31 @@ function sameDay(a, b) {
 
 function fullDayLabel(date) {
   return WEEKDAYS[date.getDay()] + " " + date.getDate() + " " + MONTHS[date.getMonth()]
+}
+
+function sameWallDay(a, b) {
+  return wallDateKey(a) === wallDateKey(b)
+}
+
+function fullWallDayLabel(value) {
+  const date = new Date(value)
+  return WEEKDAYS[date.getUTCDay()] + " " + date.getUTCDate() + " " + MONTHS[date.getUTCMonth()]
+}
+
+function hmWall(value, timeFormat = "24h") {
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return ""
+  const hours = date.getUTCHours()
+  if (timeFormat === "12h") {
+    const hour = hours % 12 || 12
+    return hour + ":" + pad2(date.getUTCMinutes()) + (hours < 12 ? "am" : "pm")
+  }
+  return pad2(hours) + ":" + pad2(date.getUTCMinutes())
+}
+
+function wallValue(event, name, fallback) {
+  const value = event ? Number(event[name]) : NaN
+  return isFinite(value) ? value : localWallMs(fallback)
 }
 
 export function hm(value, timeFormat = "24h") {
@@ -34,6 +67,18 @@ export function timeRange(start, end, timeFormat = "24h") {
   return endLabel ? startLabel + "–" + endLabel : startLabel
 }
 
+export function eventStartTime(event, timeFormat = "24h") {
+  return event ? hmWall(wallValue(event, "localStartMs", event.startMs), timeFormat) : ""
+}
+
+export function eventTimeRange(event, timeFormat = "24h") {
+  if (!event) return ""
+  const startLabel = eventStartTime(event, timeFormat)
+  if (!startLabel) return ""
+  const endLabel = hmWall(wallValue(event, "localEndMs", event.endMs), timeFormat)
+  return endLabel ? startLabel + "–" + endLabel : startLabel
+}
+
 export function meetingTimeLabel(start, end, now, timeFormat = "24h") {
   const startDate = new Date(start)
   const nowDate = now
@@ -43,6 +88,20 @@ export function meetingTimeLabel(start, end, now, timeFormat = "24h") {
   else if (sameDay(startDate, addLocalDays(nowDate, 1))) labels.push("Tomorrow")
   else labels.push(fullDayLabel(startDate))
   const range = timeRange(start, end, timeFormat)
+  if (range) labels.push(range)
+  return labels.join(" · ")
+}
+
+export function meetingTimeLabelForEvent(event, now, timeFormat = "24h") {
+  if (!event) return ""
+  const start = wallValue(event, "localStartMs", event.startMs)
+  const current = viewerNowWallMs(event, now)
+  if (!isFinite(start) || !isFinite(current)) return ""
+  const labels = []
+  if (sameWallDay(start, current)) labels.push("Today")
+  else if (sameWallDay(start, addWallDays(current, 1))) labels.push("Tomorrow")
+  else labels.push(fullWallDayLabel(start))
+  const range = eventTimeRange(event, timeFormat)
   if (range) labels.push(range)
   return labels.join(" · ")
 }
@@ -64,7 +123,7 @@ export function relativeStatus(event, now, timeFormat = "24h") {
 
   if (current < start) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
-    return minutes >= 60 ? "starts at " + hm(start, timeFormat) : "starts in " + minutes + " min"
+    return minutes >= 60 ? "starts at " + eventStartTime(event, timeFormat) : "starts in " + minutes + " min"
   }
   if (current < end) return timeLeftLabel(end, current)
   return ""
@@ -79,6 +138,21 @@ function dayLabel(value, now) {
   const distance = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(current.getFullYear(), current.getMonth(), current.getDate())) / 86400000)
   if (distance > 1 && distance < 7) return WEEKDAYS[date.getDay()]
   return fullDayLabel(date)
+}
+
+function wallDayLabel(value, current) {
+  const key = wallDateKey(value)
+  if (key === wallDateKey(current)) return "Today"
+  if (key === wallDateKey(addWallDays(current, 1))) return "Tmrw"
+  const distance = Math.round((wallDayNumber(value) - wallDayNumber(current)) / 86400000)
+  const date = new Date(value)
+  if (distance > 1 && distance < 7) return WEEKDAYS[date.getUTCDay()]
+  return fullWallDayLabel(value)
+}
+
+function wallDayNumber(value) {
+  const date = new Date(value)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
 }
 
 // Neutralize rich-text triggers in strings passed to host AutoText items.
@@ -102,9 +176,11 @@ export function formatLabel(event, now, timeFormat = "24h") {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     suffix = " · in " + minutes + " min"
   } else {
-    suffix = " · " + (sameDay(new Date(start), now)
-      ? hm(start, timeFormat)
-      : dayLabel(start, now) + " " + hm(start, timeFormat))
+    const localStart = wallValue(event, "localStartMs", start)
+    const localNow = viewerNowWallMs(event, now)
+    suffix = " · " + (sameWallDay(localStart, localNow)
+      ? hmWall(localStart, timeFormat)
+      : wallDayLabel(localStart, localNow) + " " + hmWall(localStart, timeFormat))
   }
 
   const titleLimit = Math.max(3, MAX_BAR_LABEL_LENGTH - suffix.length)
@@ -132,6 +208,17 @@ export function daySectionTitle(value, now) {
 
 export function daySectionDate(value) {
   return fullDayLabel(new Date(value)).toUpperCase()
+}
+
+export function wallDaySectionTitle(value, now) {
+  const key = wallDateKey(value)
+  if (key === wallDateKey(now)) return "TODAY"
+  if (key === wallDateKey(addWallDays(now, 1))) return "TOMORROW"
+  return wallDaySectionDate(value)
+}
+
+export function wallDaySectionDate(value) {
+  return fullWallDayLabel(value).toUpperCase()
 }
 
 export function truncate(value, limit) {

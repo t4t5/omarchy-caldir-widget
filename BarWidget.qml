@@ -35,11 +35,8 @@ BarWidget {
   readonly property bool showingFallbackIcon: label === ""
 
   function agendaCommand() {
-    var range = Model.queryRange(new Date(), daysAhead)
     return Model.boundedCommand([
-      caldirExecutable, "events", "--json",
-      "--from", range.from,
-      "--to", range.to
+      localizedEventsPath(), caldirExecutable, String(daysAhead)
     ])
   }
 
@@ -175,6 +172,10 @@ BarWidget {
 
   function handlerPath() {
     return Qt.resolvedUrl("bin/open-event").toString().replace("file://", "")
+  }
+
+  function localizedEventsPath() {
+    return Qt.resolvedUrl("bin/localized-events").toString().replace("file://", "")
   }
 
   function handlerEnvironment(event) {
@@ -419,7 +420,7 @@ BarWidget {
     if (loadError !== "") return Model.plainLine(loadError)
     if (!nextMeeting) return "No upcoming meetings"
     var title = Model.plainLine(nextMeeting.title)
-    var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
+    var range = Model.eventTimeRange(nextMeeting, timeFormat)
     var status = Model.relativeStatus(nextMeeting, now, timeFormat)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")
     return line

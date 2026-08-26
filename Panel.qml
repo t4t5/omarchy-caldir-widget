@@ -506,7 +506,7 @@ Panel {
                 Text {
                   width: parent.width
                   text: root.next
-                    ? Model.meetingTimeLabel(root.next.startMs, root.next.endMs, root.now, root.timeFormat)
+                    ? Model.meetingTimeLabelForEvent(root.next, root.now, root.timeFormat)
                       + (Model.relativeStatus(root.next, root.now, root.timeFormat)
                         ? " · " + Model.relativeStatus(root.next, root.now, root.timeFormat)
                         : "")
@@ -744,7 +744,7 @@ Panel {
                             Layout.preferredWidth: Style.space(root.timeFormat === "12h" ? 54 : 44)
                             text: eventRow.meeting.all_day
                               ? "ALL DAY"
-                              : Model.hm(eventRow.meeting.startMs, root.timeFormat)
+                              : Model.eventStartTime(eventRow.meeting, root.timeFormat)
                             color: Qt.darker(root.contentForeground, 1.3)
                             font.family: root.contentFontFamily
                             font.pixelSize: eventRow.meeting.all_day ? Style.font.caption : Style.font.bodySmall
