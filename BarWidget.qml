@@ -394,13 +394,14 @@ BarWidget {
     Grid {
       id: barContent
       anchors.centerIn: parent
-      columns: button.vertical ? 1 : 3
+      // Empty Grid columns still reserve spacing, so count only visible content.
+      columns: !button.vertical && !root.showingFallbackIcon && root.invitationCount > 0 ? 2 : 1
       horizontalItemAlignment: Grid.AlignHCenter
       verticalItemAlignment: Grid.AlignVCenter
       spacing: Style.space(6)
 
       Grid {
-        columns: button.vertical ? 1 : 2
+        columns: !button.vertical && root.invitationCount > 0 ? 2 : 1
         horizontalItemAlignment: Grid.AlignHCenter
         verticalItemAlignment: Grid.AlignVCenter
         spacing: Style.space(5)
