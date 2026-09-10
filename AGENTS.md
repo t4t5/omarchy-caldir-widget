@@ -25,3 +25,24 @@ card's actions come from `Model.heroActions(event)` as an ordered list, and
 simply is not in the list. `focusHero` and `focusEvent` are the only writers of
 the selection state and both clamp on the way in; `Panel.qml` binds to
 `heroAction`/`heroActions` rather than re-deriving availability from the event.
+
+### Invitations
+
+`InvitationController.qml` loads `caldir invites --json` independently of the
+agenda range. `model/invitations.mjs` normalizes pending invitations and counts
+one response per source path (expanded recurring instances share an RSVP).
+Both `needs_action` from caldir JSON and `needs-action` normalize to the latter.
+
+Responses run `caldir rsvp -- <path> <response>`, then push that calendar. The
+controller keeps explicit busy state because `Process.running` updates can be
+deferred. A successful exit alone does not confirm a push: caldir can print
+provider errors on stdout and exit zero. Unconfirmed sends retain a retry
+action, and ordinary refreshes do not clear response errors. The bar and panel
+use `visibleInvitations`: a card disappears immediately while saving or sending
+and returns only on failure. Failed pushes retain the card across refreshes;
+retry feedback stays hidden while a send is in progress.
+
+Invitation keyboard selection also goes through `focusHero`, with an optional
+invitation index. Its actions come from `Model.INVITATION_ACTIONS` in display
+order. `scripts/test-qml.sh` runs navigation and response tests in Quickshell
+with a fake caldir executable; it never responds to real invitations.

@@ -30,7 +30,7 @@ function validCalendarColor(value) {
 const RSVP_STATUSES = ["accepted", "declined", "tentative", "needs-action"]
 
 function validRsvp(value) {
-  const rsvp = lower(limited(value, MAX_ENUM_CHARS))
+  const rsvp = lower(limited(value, MAX_ENUM_CHARS)).replace("_", "-")
   return RSVP_STATUSES.indexOf(rsvp) !== -1 ? rsvp : ""
 }
 

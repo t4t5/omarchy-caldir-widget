@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -eu
+case "$1" in
+  invites) printf '[]\n' ;;
+  rsvp)
+    [[ "$2" == -- && "$3" == /tmp/widget-invite.ics ]]
+    [[ "$4" == accept || "$4" == decline || "$4" == maybe ]]
+    ;;
+  push)
+    [[ "$2" == --calendar ]]
+    # Leave time for the QML tests to observe the in-flight send state.
+    sleep 0.2
+    if [[ "$3" == offline ]]; then
+      printf 'Provider failed: offline\n'
+    else
+      printf 'Pushed: 0 created, 1 updated, 0 deleted\n'
+    fi
+    ;;
+  *) exit 1 ;;
+esac

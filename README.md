@@ -9,6 +9,7 @@
 - Supports all major calendar providers (Google Calendar, iCloud, Outlook, CalDAV...) through [caldir](https://caldir.org).
 - Uses vim motions (<kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>,<kbd>l</kbd>) for navigation.
 - Highlights the next meeting when it's close to start.
+- Shows a badge for pending invitations, with **Maybe**, **Decline**, and **Accept** actions in the panel.
 - One-click action. Meeting events (Google Meet, Zoom, etc) open the video URL in your browser. Non-meeting events open in [renCal](https://rencal.org).
 - Syncs automatically (or trigger manually with <kbd>s</kbd>).
 
@@ -86,6 +87,24 @@ Raise `lookaheadMinutes` if you want more warning before a call, and set
 Declined, all-day, and tentative events stay off the bar under both settings.
 When the selected event has no video link, the "Next" card drops its **Join
 Meeting** button and offers **Open in Calendar** alone.
+
+### Invitations
+
+Pending invitations appear above the next meeting in the panel, with a count
+beside the calendar icon in the bar. This uses `caldir invites --json` (released
+in caldir v0.13.1) and covers caldir's next 30 days, independently of `daysAhead`.
+All-day invitations and invitations without a video link are included.
+
+Choose **Maybe**, **Decline**, or **Accept** to save and send your response
+immediately. The widget runs `caldir rsvp`, then `caldir push --calendar` for
+that invitation's calendar. Caldir pushes all pending changes in that calendar.
+If sending cannot be confirmed, **Retry sending** (or <kbd>s</kbd>) retries it.
+
+Recurring occurrences that share a source file count as one invitation; the
+response applies to that source event, usually the whole series. Occurrence
+overrides with their own files appear separately. Use <kbd>j</kbd>/<kbd>k</kbd>
+to move between invitation cards, the meeting card, and agenda rows;
+<kbd>h</kbd>/<kbd>l</kbd> selects an action and Enter responds.
 
 ### Custom script
 
