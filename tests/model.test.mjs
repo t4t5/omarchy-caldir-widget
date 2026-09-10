@@ -25,6 +25,44 @@ function event(start, extra = {}) {
   }
 }
 
+test("recurrence IDs use the RFC 5545 form from caldir's instance_id", () => {
+  const timed = event("2026-08-21T16:00:00+02:00", {
+    uid: "series@example.com",
+    recurrence_id: "2026-08-21T16:00:00+02:00",
+    instance_id: "series@example.com__TZID=Europe/Stockholm:20260821T160000",
+    recurring: true
+  })
+  const allDay = event("2026-09-11", {
+    uid: "trip__weird@example.com",
+    recurrence_id: "2026-09-11",
+    instance_id: "trip__weird@example.com__20260911",
+    all_day: true,
+    recurring: true
+  })
+  const single = event("2026-08-21T16:00:00+02:00", {
+    uid: "single__20260821",
+    instance_id: "single__20260821"
+  })
+  const mismatched = event("2026-09-11", {
+    uid: "series@example.com",
+    recurrence_id: "2026-09-11",
+    instance_id: "other@example.com__20260911"
+  })
+  const missing = event("2026-09-11", {
+    uid: "series@example.com",
+    recurrence_id: "2026-09-11"
+  })
+
+  const normalized = (raw) => Model.normalizedEvent(raw, {})
+  assert.equal(normalized(timed).recurrence_id, "TZID=Europe/Stockholm:20260821T160000")
+  assert.equal(normalized(allDay).recurrence_id, "20260911")
+  assert.equal(normalized(allDay).uid, "trip__weird@example.com")
+  assert.equal(normalized(single).recurrence_id, "")
+  assert.equal(normalized(single).uid, "single__20260821")
+  assert.equal(normalized(mismatched).recurrence_id, "")
+  assert.equal(normalized(missing).recurrence_id, "")
+})
+
 test("only caldir's missing-calendar response selects the setup state", () => {
   assert.equal(Model.isNoCalendarsError("Error: No calendars found.\n\nConnect your first calendar with:\n  caldir connect <provider>"), true)
   assert.equal(Model.isNoCalendarsError("No calendars found.\r\n\r\nConnect your first calendar with:"), true)
@@ -50,13 +88,14 @@ test("parseAgenda attaches the matching calendar color", () => {
   ]))
   const parsed = Model.parseAgenda(JSON.stringify([
     event("2026-08-19T11:00:00+01:00", {
-      recurrence_id: "2026-08-19T11:00:00+01:00"
+      recurrence_id: "2026-08-19T11:00:00+01:00",
+      instance_id: "2026-08-19T11:00:00+01:00__TZID=Europe/London:20260819T110000"
     }),
     event("2026-08-19T12:00:00+01:00", { calendar: "unknown" })
   ]), colors)
 
   assert.equal(parsed[0].calendarColor, "#9fe1e7")
-  assert.equal(parsed[0].recurrence_id, "2026-08-19T11:00:00+01:00")
+  assert.equal(parsed[0].recurrence_id, "TZID=Europe/London:20260819T110000")
   assert.equal(parsed[1].calendarColor, "")
 })
 

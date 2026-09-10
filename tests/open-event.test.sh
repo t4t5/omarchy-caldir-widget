@@ -38,9 +38,9 @@ assert_output \
   "$handler" --print calendar
 
 uid="event@example.com"
-recurrence_id="2026-08-21T16:00:00+02:00"
+recurrence_id="TZID=Europe/Stockholm:20260821T160000"
 assert_output \
-  "open rencal://event?uid=event%40example.com&recurrence-id=2026-08-21T16%3A00%3A00%2B02%3A00" \
+  "open rencal://event?uid=event%40example.com&recurrence-id=TZID%3DEurope%2FStockholm%3A20260821T160000" \
   EVENT_UID="$uid" \
   EVENT_RECURRENCE_ID="$recurrence_id" \
   "$handler" --print calendar

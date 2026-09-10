@@ -138,7 +138,7 @@ end
 | Field | Value |
 | --- | --- |
 | `uid` | Event UID |
-| `recurrence_id` | Recurrence ID (unique for recurring events) |
+| `recurrence_id` | RFC 5545 recurrence ID of the occurrence (e.g. `20260911` or `TZID=Europe/London:20260911T100000`); empty for non-recurring events |
 | `title` | Event title |
 | `conference_url` | Detected video meeting URL |
 

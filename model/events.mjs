@@ -52,6 +52,15 @@ export function parseCalendarColors(stdout) {
   return colors
 }
 
+// The RFC 5545 recurrence ID, taken from caldir's `{uid}__{recurrence_id}` instance ID.
+function recurrenceId(raw, uid) {
+  if (text(raw.recurrence_id) === "" || uid === "") return ""
+  const prefix = uid + "__"
+  const instanceId = limited(raw.instance_id, prefix.length + MAX_ID_CHARS)
+  if (instanceId.indexOf(prefix) !== 0) return ""
+  return instanceId.slice(prefix.length)
+}
+
 export function normalizedEvent(raw, calendarColors) {
   if (!raw || typeof raw !== "object") return null
 
@@ -78,9 +87,11 @@ export function normalizedEvent(raw, calendarColors) {
     ? validCalendarColor(calendarColors[calendar])
     : ""
 
+  const uid = limited(raw.uid, MAX_ID_CHARS)
+
   return {
-    uid: clamped(raw.uid, MAX_ID_CHARS),
-    recurrence_id: clamped(raw.recurrence_id, MAX_ID_CHARS),
+    uid,
+    recurrence_id: recurrenceId(raw, uid),
     calendar,
     calendarColor,
     title: clamped(raw.title, MAX_TITLE_CHARS).trim() || "Untitled event",
