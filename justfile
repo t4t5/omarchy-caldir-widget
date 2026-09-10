@@ -7,6 +7,7 @@ default:
 # Run all tests and checks:
 test: check
   npm test
+  bash scripts/test-qml.sh
   bash tests/open-event.test.sh
   omarchy plugin validate .
 

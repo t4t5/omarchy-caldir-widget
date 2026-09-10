@@ -1,5 +1,13 @@
 // Stable public API shared by QML and the dependency-free Node test suite.
 export {
+  INVITATION_ACTIONS,
+  parseInvitations,
+  invitationTimeLabel,
+  rsvpCommand,
+  rsvpPushSucceeded
+} from "./model/invitations.mjs"
+
+export {
   MINUTE_MS,
   localDateKey,
   addLocalDays,

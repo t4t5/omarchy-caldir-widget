@@ -35,6 +35,8 @@ Panel {
   ]
   readonly property var scheduleGroups: hostWidget && hostWidget.scheduleGroups ? hostWidget.scheduleGroups : []
   readonly property var next: hostWidget ? hostWidget.nextMeeting : null
+  readonly property var invitations: hostWidget ? hostWidget.invitations : []
+  readonly property var invitationState: hostWidget ? hostWidget.invitationState : null
   readonly property string timeFormat: hostWidget ? hostWidget.timeFormat : "24h"
   property date now: hostWidget ? hostWidget.now : new Date()
 
@@ -45,8 +47,10 @@ Panel {
     id: navigation
     scheduleGroups: root.scheduleGroups
     nextEvent: root.next
+    invitations: root.invitations
     onOpenEventRequested: function(event) { root.openEvent(event) }
     onOpenInCalendarRequested: function(event) { root.openInCalendar(event) }
+    onResponseRequested: function(event, response) { root.respond(event, response) }
   }
 
   function open() {
@@ -92,7 +96,12 @@ Panel {
   }
 
   function syncNow() {
-    if (hostWidget) hostWidget.pull()
+    if (invitationState && invitationState.canRetry) invitationState.retrySend()
+    else if (hostWidget) hostWidget.pull()
+  }
+
+  function respond(event, response) {
+    if (invitationState) invitationState.respond(event, response)
   }
 
   function openCaldirDocs() {
@@ -156,7 +165,7 @@ Panel {
 
           Item {
             id: headerRow
-            visible: heroItem.visible || scheduleItem.visible
+            visible: heroItem.visible || scheduleItem.visible || root.invitations.length > 0
             width: parent.width
             height: visible ? Math.max(headingLabel.height, stampLabel.height, syncButton.height) : 0
             implicitHeight: height
@@ -434,6 +443,73 @@ Panel {
             }
           }
 
+          Column {
+            width: parent.width
+            visible: root.caldirState === "ready" && !!root.invitationState
+            spacing: Style.space(8)
+
+            Text {
+              width: parent.width
+              visible: text !== ""
+              text: root.invitationState
+                ? root.invitationState.responseError || root.invitationState.loadError
+                  || (root.invitationState.responding ? "Sending response…" : "")
+                : ""
+              textFormat: Text.PlainText
+              color: root.invitationState && (root.invitationState.responseError || root.invitationState.loadError)
+                ? Color.urgent : Qt.darker(root.contentForeground, 1.35)
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.WordWrap
+            }
+
+            Button {
+              visible: !!root.invitationState && !!root.invitationState.pendingSend
+              enabled: !!root.invitationState && root.invitationState.canRetry
+              text: "Retry sending"
+              bordered: true
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              fontSize: Style.font.bodySmall
+              onClicked: root.invitationState.retrySend()
+            }
+          }
+
+          Column {
+            id: invitationsColumn
+            width: parent.width
+            visible: root.caldirState === "ready" && root.invitations.length > 0
+            spacing: Style.space(8)
+
+            PanelSectionHeader {
+              text: "INVITATIONS · " + root.invitations.length
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+            }
+
+            Repeater {
+              model: root.invitations
+
+              InvitationCard {
+                id: invitationCard
+                required property var modelData
+                required property int index
+                width: invitationsColumn.width
+                invitation: modelData
+                actions: navigation.invitationActions
+                selectedAction: navigation.selectedInvitationIndex === index ? navigation.invitationAction : ""
+                canRespond: !!root.invitationState && root.invitationState.canRespond
+                foreground: root.contentForeground
+                fontFamily: root.contentFontFamily
+                timeFormat: root.timeFormat
+                now: root.now
+                onActionHovered: function(actionIndex) { navigation.focusHero(actionIndex, index) }
+                onResponseRequested: function(response) { root.respond(modelData, response) }
+                onSelectedActionChanged: if (selectedAction !== "") root.scrollItemIntoView(invitationCard)
+              }
+            }
+          }
+
           Item {
             id: heroItem
             visible: root.caldirState === "ready" && !!root.next
@@ -590,6 +666,7 @@ Panel {
               && !root.needsCalendarSetup
               && root.loadError === ""
               && root.scheduleGroups.length === 0
+              && root.invitations.length === 0
             width: parent.width
             height: visible ? emptyColumn.implicitHeight + Style.space(16) : 0
             implicitHeight: height
@@ -656,7 +733,7 @@ Panel {
                     spacing: Style.space(4)
 
                     PanelSeparator {
-                      visible: groupItem.index > 0 || heroItem.visible
+                      visible: groupItem.index > 0 || heroItem.visible || invitationsColumn.visible
                       foreground: root.contentForeground
                       strength: 0.1
                     }

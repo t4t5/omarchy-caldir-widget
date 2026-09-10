@@ -28,7 +28,11 @@ BarWidget {
   property string timeFormat: "24h"
   property date now: new Date()
 
-  readonly property bool syncing: pullProcess.running
+  readonly property var invitations: invitationController.invitations
+  readonly property var invitationState: invitationController
+  readonly property int invitationCount: invitations.length
+
+  readonly property bool syncing: pullProcess.running || invitationController.responding
   readonly property bool inMeeting: nextMeeting
     && now.getTime() >= nextMeeting.startMs
     && now.getTime() < nextMeeting.endMs
@@ -47,6 +51,7 @@ BarWidget {
   }
 
   function startDataRefresh() {
+    invitationController.refresh()
     configProcess.command = Model.boundedCommand([caldirExecutable, "config", "--json"])
     configProcess.running = true
   }
@@ -154,7 +159,7 @@ BarWidget {
   }
 
   function pull() {
-    if (pullProcess.running) return
+    if (syncing || invitationController.pendingSend) return
     if (caldirState !== "ready" || caldirExecutable === "") {
       refresh()
       return
@@ -173,6 +178,14 @@ BarWidget {
       return
     }
     refresh()
+  }
+
+  InvitationController {
+    id: invitationController
+    executable: root.caldirState === "ready" ? root.caldirExecutable : ""
+    calendarColors: root.calendarColors
+    syncBlocked: pullProcess.running
+    onResponseSaved: root.refresh()
   }
 
   function eventValue(value) {
@@ -235,7 +248,7 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
-  readonly property real openPanelIndicatorWidth: showingFallbackIcon
+  readonly property real openPanelIndicatorWidth: invitationCount > 0 ? barContent.width : showingFallbackIcon
     ? Math.max(
         fallbackGlyph.tightWidth,
         Style.space(10),
@@ -365,44 +378,80 @@ BarWidget {
     text: root.label
     labelVisible: false
     hasVisualContent: true
-    dimmed: root.label === ""
+    dimmed: root.label === "" && root.invitationCount === 0
     active: root.inMeeting
     useActiveColor: false
-    fixedWidth: root.showingFallbackIcon && !vertical ? Style.bar.iconSlot : -1
-    fixedHeight: root.showingFallbackIcon && vertical ? Style.bar.iconSlot : -1
+    fixedWidth: !vertical ? (root.invitationCount > 0
+      ? barContent.width + scaledHorizontalMargin * 2
+      : root.showingFallbackIcon ? Style.bar.iconSlot : -1) : -1
+    fixedHeight: vertical ? (root.invitationCount > 0
+      ? barContent.height + scaledVerticalPadding * 2
+      : root.showingFallbackIcon ? Style.bar.iconSlot : -1) : -1
     horizontalMargin: 8.75
     verticalPadding: 8.75
     tooltipText: root.tooltipLine
 
-    Text {
-      id: plainLabel
-      visible: !root.showingFallbackIcon
+    Grid {
+      id: barContent
       anchors.centerIn: parent
-      text: root.label
-      textFormat: Text.PlainText
-      color: button.foreground
-      font.family: button.fontFamily
-      font.pixelSize: button.fontSize
-      renderType: Text.NativeRendering
-      horizontalAlignment: Text.AlignHCenter
-      verticalAlignment: Text.AlignVCenter
+      columns: button.vertical ? 1 : 3
+      horizontalItemAlignment: Grid.AlignHCenter
+      verticalItemAlignment: Grid.AlignVCenter
+      spacing: Style.space(6)
 
-      Behavior on color {
-        enabled: !button.bar || button.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: 160 }
+      Grid {
+        columns: button.vertical ? 1 : 2
+        horizontalItemAlignment: Grid.AlignHCenter
+        verticalItemAlignment: Grid.AlignVCenter
+        spacing: Style.space(5)
+        visible: root.showingFallbackIcon || root.invitationCount > 0
+
+        OpticalGlyph {
+          id: fallbackGlyph
+          width: Style.bar.iconCanvas
+          height: Style.bar.iconCanvas
+          text: "󰃲"
+          fontFamily: button.fontFamily
+          fontSize: Style.bar.iconFont
+          color: button.foreground
+        }
+
+        Rectangle {
+          visible: root.invitationCount > 0
+          width: Math.max(height, badgeLabel.implicitWidth + Style.space(8))
+          height: Style.space(18)
+          radius: height / 2
+          color: Color.accent
+
+          Text {
+            id: badgeLabel
+            anchors.centerIn: parent
+            text: root.invitationCount
+            color: Color.background
+            font.family: button.fontFamily
+            font.pixelSize: Style.font.caption
+            font.bold: true
+          }
+        }
       }
-    }
 
-    OpticalGlyph {
-      id: fallbackGlyph
-      anchors.centerIn: parent
-      width: Style.bar.iconCanvas
-      height: Style.bar.iconCanvas
-      visible: root.showingFallbackIcon
-      text: "󰃲"
-      fontFamily: button.fontFamily
-      fontSize: Style.bar.iconFont
-      color: button.foreground
+      Text {
+        id: plainLabel
+        visible: !root.showingFallbackIcon
+        text: root.label
+        textFormat: Text.PlainText
+        color: button.foreground
+        font.family: button.fontFamily
+        font.pixelSize: button.fontSize
+        renderType: Text.NativeRendering
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+
+        Behavior on color {
+          enabled: !button.bar || button.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: 160 }
+        }
+      }
     }
 
     onPressed: function(mouseButton) {
@@ -424,6 +473,8 @@ BarWidget {
     if (caldirState === "unsupported") return Model.plainLine(loadError) + "\nClick for update instructions"
     if (needsCalendarSetup) return "No calendar found\nConnect your first calendar"
     if (loadError !== "") return Model.plainLine(loadError)
+    if (invitationCount > 0) return invitationCount + (invitationCount === 1
+      ? " invitation needs a response" : " invitations need a response") + "\nClick to RSVP"
     if (!nextMeeting) return showingAllEvents ? "No upcoming events" : "No upcoming meetings"
     var title = Model.plainLine(nextMeeting.title)
     var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
