@@ -37,7 +37,10 @@ Responses run `caldir rsvp -- <path> <response>`, then push that calendar. The
 controller keeps explicit busy state because `Process.running` updates can be
 deferred. A successful exit alone does not confirm a push: caldir can print
 provider errors on stdout and exit zero. Unconfirmed sends retain a retry
-action, and ordinary refreshes do not clear response errors.
+action, and ordinary refreshes do not clear response errors. The bar and panel
+use `visibleInvitations`: a card disappears immediately while saving or sending
+and returns only on failure. Failed pushes retain the card across refreshes;
+retry feedback stays hidden while a send is in progress.
 
 Invitation keyboard selection also goes through `focusHero`, with an optional
 invitation index. Its actions come from `Model.INVITATION_ACTIONS` in display

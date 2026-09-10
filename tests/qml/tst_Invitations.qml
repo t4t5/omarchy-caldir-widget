@@ -79,20 +79,36 @@ TestCase {
       responses.invitations = [invite()]
       savedSpy.clear()
       responses.respond(invite(), response)
+      compare(responses.phase, "saving")
+      compare(responses.visibleInvitations.length, 0)
+      verify(!responses.sendFailed)
       responses.respond(invite(), response) // busy: duplicate click is ignored
+      tryCompare(savedSpy, "count", 1)
+      compare(responses.phase, "sending")
+      compare(responses.visibleInvitations.length, 0)
+      verify(!responses.sendFailed)
+      verify(!responses.canRetry)
       tryCompare(responses, "busy", false)
       compare(savedSpy.count, 2) // local save, then confirmed push
       compare(responses.invitations.length, 0)
+      compare(responses.visibleInvitations.length, 0)
       compare(responses.pendingSend, null)
       compare(responses.responseError, "")
     }
   }
 
   function test_failed_save_keeps_invitation() {
+    var second = { path: "/tmp/second.ics", title: "Another invitation" }
+    responses.invitations = [invite(), second]
+    navigation.invitations = Qt.binding(function() { return responses.visibleInvitations })
     responses.executable = "/bin/false"
     responses.respond(invite(), "accept")
+    compare(responses.visibleInvitations.length, 1)
+    compare(responses.visibleInvitations[0].path, second.path)
+    compare(navigation.invitations[navigation.selectedInvitationIndex].path, second.path)
     tryCompare(responses, "busy", false)
-    compare(responses.invitations.length, 1)
+    compare(responses.visibleInvitations.length, 2)
+    compare(responses.visibleInvitations[0].path, invite().path)
     compare(responses.pendingSend, null)
     verify(responses.responseError.indexOf("Could not save") >= 0)
     compare(savedSpy.count, 0)
@@ -103,14 +119,31 @@ TestCase {
     responses.respond(invite("offline"), "accept")
     tryCompare(responses, "busy", false)
     compare(responses.invitations.length, 0)
+    compare(responses.visibleInvitations.length, 1)
+    compare(responses.visibleInvitations[0].path, invite().path)
+    verify(responses.sendFailed)
     verify(responses.canRetry)
     verify(!responses.canRespond)
     verify(responses.responseError.indexOf("sending could not be confirmed") >= 0)
+    responses.refresh()
+    tryCompare(responses, "busy", false)
+    compare(responses.visibleInvitations.length, 1)
+    verify(responses.sendFailed)
+    responses.retrySend()
+    compare(responses.visibleInvitations.length, 0)
+    verify(!responses.sendFailed)
+    compare(responses.responseError, "")
+    tryCompare(responses, "busy", false)
+    compare(responses.visibleInvitations.length, 1)
+    verify(responses.sendFailed)
     responses.pendingSend = invite("work")
     responses.retrySend()
+    compare(responses.visibleInvitations.length, 0)
+    verify(!responses.sendFailed)
     tryCompare(responses, "busy", false)
     compare(responses.pendingSend, null)
     compare(responses.responseError, "")
+    compare(responses.visibleInvitations.length, 0)
   }
 
   function test_pull_and_stale_cards_cannot_start_rsvp() {

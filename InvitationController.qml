@@ -20,6 +20,17 @@ Item {
   readonly property bool busy: refreshing || responding
   readonly property bool canRespond: executable !== "" && !busy && !syncBlocked && !pendingSend
   readonly property bool canRetry: !!pendingSend && !busy && !syncBlocked
+  readonly property bool sendFailed: !!pendingSend && responseError !== "" && !responding
+  readonly property var visibleInvitations: {
+    var visible = invitations.filter(function(invite) {
+      return (!root.respondingTo || invite.path !== root.respondingTo.path)
+        && (!root.pendingSend || invite.path !== root.pendingSend.path)
+    })
+    // A saved response no longer appears in `caldir invites`, so retain the
+    // card ourselves if its push fails, including across ordinary refreshes.
+    if (sendFailed) visible.push(pendingSend)
+    return visible.sort(function(a, b) { return a.startMs - b.startMs })
+  }
 
   signal responseSaved()
 
@@ -43,8 +54,12 @@ Item {
 
   function retrySend() {
     if (!canRetry) return
-    responseError = ""
     phase = "sending"
+    responseError = ""
+    startPush()
+  }
+
+  function startPush() {
     pushProcess.command = Model.boundedCommand([executable, "push", "--calendar", pendingSend.calendar])
     pushProcess.running = true
   }
@@ -78,17 +93,18 @@ Item {
     id: rsvpProcess
     stderr: StdioCollector { id: rsvpStderr; waitForEnd: true }
     onExited: function(exitCode) {
-      root.phase = ""
       if (exitCode !== 0) {
         root.responseError = "Could not save your response. "
           + Model.truncate(String(rsvpStderr.text || "").trim(), 200)
         root.respondingTo = null
+        root.phase = ""
         return
       }
       root.pendingSend = root.respondingTo
       root.respondingTo = null
       root.invitations = root.invitations.filter(function(invite) { return invite.path !== root.pendingSend.path })
-      root.retrySend()
+      root.phase = "sending"
+      root.startPush()
       root.responseSaved()
     }
   }
@@ -98,15 +114,16 @@ Item {
     stdout: StdioCollector { id: pushStdout; waitForEnd: true }
     stderr: StdioCollector { id: pushStderr; waitForEnd: true }
     onExited: function(exitCode) {
-      root.phase = ""
       // caldir can report provider failures on stdout with exit code zero.
       if (!Model.rsvpPushSucceeded(exitCode, pushStdout.text || "")) {
         root.responseError = "Your response is saved, but sending could not be confirmed. Retry sending. "
           + Model.truncate(Model.plainLine(String(pushStderr.text || pushStdout.text || "").trim()), 200)
+        root.phase = ""
         return
       }
       root.pendingSend = null
       root.responseError = ""
+      root.phase = ""
       root.refresh()
       root.responseSaved()
     }

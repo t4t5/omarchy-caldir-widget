@@ -8,6 +8,8 @@ case "$1" in
     ;;
   push)
     [[ "$2" == --calendar ]]
+    # Leave time for the QML tests to observe the in-flight send state.
+    sleep 0.2
     if [[ "$3" == offline ]]; then
       printf 'Provider failed: offline\n'
     else

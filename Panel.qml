@@ -453,7 +453,6 @@ Panel {
               visible: text !== ""
               text: root.invitationState
                 ? root.invitationState.responseError || root.invitationState.loadError
-                  || (root.invitationState.responding ? "Sending response…" : "")
                 : ""
               textFormat: Text.PlainText
               color: root.invitationState && (root.invitationState.responseError || root.invitationState.loadError)
@@ -464,7 +463,7 @@ Panel {
             }
 
             Button {
-              visible: !!root.invitationState && !!root.invitationState.pendingSend
+              visible: !!root.invitationState && root.invitationState.sendFailed
               enabled: !!root.invitationState && root.invitationState.canRetry
               text: "Retry sending"
               bordered: true

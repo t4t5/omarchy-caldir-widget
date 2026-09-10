@@ -28,7 +28,7 @@ BarWidget {
   property string timeFormat: "24h"
   property date now: new Date()
 
-  readonly property var invitations: invitationController.invitations
+  readonly property var invitations: invitationController.visibleInvitations
   readonly property var invitationState: invitationController
   readonly property int invitationCount: invitations.length
 
