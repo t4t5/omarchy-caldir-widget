@@ -419,8 +419,8 @@ BarWidget {
 
         Rectangle {
           visible: root.invitationCount > 0
-          width: Math.max(height, badgeLabel.implicitWidth + Style.space(8))
-          height: Style.space(18)
+          width: Math.max(height, badgeLabel.implicitWidth + Style.space(6))
+          height: Style.space(14)
           radius: height / 2
           color: Color.accent
 
@@ -430,7 +430,7 @@ BarWidget {
             text: root.invitationCount
             color: Color.background
             font.family: button.fontFamily
-            font.pixelSize: Style.font.caption
+            font.pixelSize: Style.font.caption * 0.85
             font.bold: true
           }
         }
