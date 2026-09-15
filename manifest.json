@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "org.ren.caldir",
   "name": "Caldir Calendar",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "author": "t4t5",
   "license": "MIT",
   "description": "Quick access to your next calendar events.",
