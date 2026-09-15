@@ -8,9 +8,11 @@ QtObject {
   id: root
 
   readonly property bool running: process.running
+  property bool invitationsSupported: false
   signal finished(string errorMessage)
 
   function start(executable) {
+    invitationsSupported = false
     process.command = Command.boundedCommand([executable, "--version"])
     process.running = true
   }
@@ -27,6 +29,7 @@ QtObject {
     }
     onExited: function(exitCode) {
       var output = String(versionStdout.text || "") + "\n" + String(versionStderr.text || "")
+      root.invitationsSupported = exitCode === 0 && VersionCheck.supportsInvitations(output)
       root.finished(VersionCheck.errorMessage(exitCode, output))
     }
   }

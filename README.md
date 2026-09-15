@@ -28,6 +28,8 @@ This will add the widget to `~/.config/omarchy/shell.json` as:
 ```
 
 The widget uses [caldir-cli](https://caldir.org) to read your calendar data (requires v0.12.1 or higher).
+Pending invitations and RSVP actions are enabled with caldir v0.13.1 or higher;
+older supported versions continue to show and sync the agenda.
 
 ## Usage
 

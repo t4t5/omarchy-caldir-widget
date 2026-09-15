@@ -3,7 +3,8 @@ import test from "node:test"
 
 import {
   errorMessage,
-  isBeforeMinimumVersion
+  isBeforeMinimumVersion,
+  supportsInvitations
 } from "../model/check-caldir-version.mjs"
 
 test("caldir versions before 0.12.1 require an update", () => {
@@ -13,6 +14,16 @@ test("caldir versions before 0.12.1 require an update", () => {
   assert.equal(isBeforeMinimumVersion("caldir-cli 0.12.1"), false)
   assert.equal(isBeforeMinimumVersion("caldir-cli 0.13.2"), false)
   assert.equal(isBeforeMinimumVersion("unexpected output"), false)
+})
+
+test("invitations require caldir 0.13.1 without rejecting older agenda support", () => {
+  assert.equal(supportsInvitations("caldir-cli 0.12.1"), false)
+  assert.equal(supportsInvitations("caldir-cli 0.13.0"), false)
+  assert.equal(supportsInvitations("caldir-cli 0.13.1-beta.1"), false)
+  assert.equal(supportsInvitations("caldir-cli 0.13.1"), true)
+  assert.equal(supportsInvitations("caldir-cli 0.14.0"), true)
+  assert.equal(supportsInvitations("unexpected output"), false)
+  assert.equal(errorMessage(0, "caldir-cli 0.12.1"), "")
 })
 
 test("the version check accepts only identifiable supported versions", () => {

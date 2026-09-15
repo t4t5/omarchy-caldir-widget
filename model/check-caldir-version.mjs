@@ -1,18 +1,32 @@
 export const MINIMUM_CALDIR_VERSION = "0.12.1"
+export const INVITATIONS_CALDIR_VERSION = "0.13.1"
 
-export function isBeforeMinimumVersion(value) {
+function parsedVersion(value) {
   const text = String(value === undefined || value === null ? "" : value)
   const match = text.match(/(?:^|\s)v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?=\s|$)/)
-  if (!match) return false
+  return match ? {
+    parts: [Number(match[1]), Number(match[2]), Number(match[3])],
+    prerelease: match[4] !== undefined
+  } : null
+}
 
-  const version = [Number(match[1]), Number(match[2]), Number(match[3])]
-  const minimum = [0, 12, 1]
-  for (let i = 0; i < minimum.length; i++) {
-    if (version[i] !== minimum[i]) return version[i] < minimum[i]
+export function isAtLeastVersion(value, minimum) {
+  const version = parsedVersion(value)
+  const required = parsedVersion(minimum)
+  if (!version || !required) return false
+
+  for (let i = 0; i < required.parts.length; i++) {
+    if (version.parts[i] !== required.parts[i]) return version.parts[i] > required.parts[i]
   }
+  return !version.prerelease || required.prerelease
+}
 
-  // A prerelease of the minimum version is still older than that release.
-  return match[4] !== undefined
+export function supportsInvitations(value) {
+  return isAtLeastVersion(value, INVITATIONS_CALDIR_VERSION)
+}
+
+export function isBeforeMinimumVersion(value) {
+  return !!parsedVersion(value) && !isAtLeastVersion(value, MINIMUM_CALDIR_VERSION)
 }
 
 export function errorMessage(exitCode, versionOutput) {

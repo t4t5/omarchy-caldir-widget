@@ -28,8 +28,9 @@ BarWidget {
   property string timeFormat: "24h"
   property date now: new Date()
 
-  readonly property var invitations: invitationController.visibleInvitations
-  readonly property var invitationState: invitationController
+  readonly property bool invitationsSupported: caldirVersionCheck.invitationsSupported
+  readonly property var invitations: invitationsSupported ? invitationController.visibleInvitations : []
+  readonly property var invitationState: invitationsSupported ? invitationController : null
   readonly property int invitationCount: invitations.length
 
   readonly property bool syncing: pullProcess.running || invitationController.responding
@@ -51,7 +52,7 @@ BarWidget {
   }
 
   function startDataRefresh() {
-    invitationController.refresh()
+    if (invitationsSupported) invitationController.refresh()
     configProcess.command = Model.boundedCommand([caldirExecutable, "config", "--json"])
     configProcess.running = true
   }
@@ -182,7 +183,7 @@ BarWidget {
 
   InvitationController {
     id: invitationController
-    executable: root.caldirState === "ready" ? root.caldirExecutable : ""
+    executable: root.caldirState === "ready" && root.invitationsSupported ? root.caldirExecutable : ""
     calendarColors: root.calendarColors
     syncBlocked: pullProcess.running
     onResponseSaved: root.refresh()
