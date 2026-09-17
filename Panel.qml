@@ -660,51 +660,11 @@ Panel {
           }
 
           Item {
-            id: emptyItem
+            id: scheduleItem
             visible: root.caldirState === "ready"
               && !root.needsCalendarSetup
-              && root.loadError === ""
-              && root.scheduleGroups.length === 0
-              && root.invitations.length === 0
-            width: parent.width
-            height: visible ? emptyColumn.implicitHeight + Style.space(16) : 0
-            implicitHeight: height
-
-            Column {
-              id: emptyColumn
-              anchors.centerIn: parent
-              spacing: Style.space(4)
-
-              Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "󰃲"
-                color: Qt.darker(root.contentForeground, 1.6)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.display
-              }
-
-              Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "No upcoming meetings"
-                color: Qt.darker(root.contentForeground, 1.3)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.body
-                font.bold: true
-              }
-
-              Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Your schedule is clear for the next few days."
-                color: Qt.darker(root.contentForeground, 1.6)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-              }
-            }
-          }
-
-          Item {
-            id: scheduleItem
-            visible: root.caldirState === "ready" && root.scheduleGroups.length > 0
+              && root.scheduleGroups.length > 0
+              && (root.loadError === "" || navigation.eventCount() > 0)
             width: parent.width
             height: visible ? scheduleColumn.implicitHeight : 0
             implicitHeight: height
@@ -754,6 +714,18 @@ Panel {
                         fontFamily: root.contentFontFamily
                         opacity: 0.55
                       }
+                    }
+
+                    Text {
+                      visible: groupItem.group.items.length === 0
+                      width: parent.width
+                      leftPadding: Style.space(4)
+                      topPadding: Style.space(4)
+                      bottomPadding: Style.space(4)
+                      text: "No events"
+                      color: Qt.darker(root.contentForeground, 1.5)
+                      font.family: root.contentFontFamily
+                      font.pixelSize: Style.font.body
                     }
 
                     Repeater {

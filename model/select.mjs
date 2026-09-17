@@ -114,6 +114,13 @@ export function buildScheduleGroups(events, now, options) {
   const byKey = {}
   const rangeStart = localDay(now)
   const rangeEnd = addLocalDays(rangeStart, daysAhead)
+  const todayKey = localDateKey(rangeStart)
+  byKey[todayKey] = {
+    key: todayKey,
+    title: daySectionTitle(rangeStart.getTime(), now),
+    dateTitle: daySectionDate(rangeStart.getTime()),
+    items: []
+  }
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i]
