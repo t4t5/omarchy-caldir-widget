@@ -40,15 +40,6 @@ Panel {
   readonly property string timeFormat: hostWidget ? hostWidget.timeFormat : "24h"
   property date now: hostWidget ? hostWidget.now : new Date()
 
-  // `bar.foreground`, not `bar.barForeground`: the popup renders on its own
-  // opaque card (the shell's popups background), not on the bar surface, so
-  // its text must stay with the theme's bar text in every transparency
-  // state. `barForeground` is the colour the BAR paints with — theme text on
-  // the default bar, the wallpaper-sampled contrast colour once the bar goes
-  // transparent — which turned this panel's text black over the dark card
-  // exactly when the bar was transparent over a light wallpaper. The bar
-  // entry keeps WidgetButton's `bar.barForeground` default; the panel follows
-  // the same split every first-party popup uses (weather, nexthop).
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
