@@ -22,11 +22,9 @@ Panel {
   readonly property bool needsCaldirUpdate: caldirState === "unsupported"
   readonly property string loadError: hostWidget ? hostWidget.loadError : ""
   readonly property bool needsCalendarSetup: hostWidget ? hostWidget.needsCalendarSetup : false
-  // Keep installation a user-reviewed terminal step.
-  readonly property string setupCommand: needsCaldirUpdate
-    ? "caldir update"
-    : "curl -sSf https://caldir.org/install.sh | sh"
-  property bool setupCommandCopied: false
+  // Installation is left to caldir's docs; the panel only suggests an update.
+  readonly property string updateCommand: "caldir update"
+  property bool updateCommandCopied: false
   readonly property var connectionCommands: [
     "caldir connect google",
     "caldir connect icloud",
@@ -105,19 +103,19 @@ Panel {
   }
 
   function openCaldirDocs() {
-    Quickshell.execDetached(["xdg-open", "https://caldir.org"])
+    Quickshell.execDetached(["xdg-open", "https://caldir.org/quickstart/"])
   }
 
-  function copySetupCommand() {
-    Quickshell.execDetached(["wl-copy", root.setupCommand])
-    setupCommandCopied = true
+  function copyUpdateCommand() {
+    Quickshell.execDetached(["wl-copy", root.updateCommand])
+    updateCommandCopied = true
     copyFeedbackTimer.restart()
   }
 
   Timer {
     id: copyFeedbackTimer
     interval: 1500
-    onTriggered: root.setupCommandCopied = false
+    onTriggered: root.updateCommandCopied = false
   }
 
   onOpenedChanged: if (opened) {
@@ -285,7 +283,7 @@ Panel {
                 width: parent.width
                 text: root.needsCaldirUpdate
                   ? root.loadError
-                  : "This widget needs caldir v0.12.1 or newer. Copy this command into your terminal to install it, then follow the setup guide at caldir.org to connect your calendar."
+                  : "This widget needs caldir v0.12.1 or newer. Follow the install guide at caldir.org, then connect your calendar."
                 textFormat: Text.PlainText
                 color: Qt.darker(root.contentForeground, 1.35)
                 font.family: root.contentFontFamily
@@ -294,20 +292,21 @@ Panel {
               }
 
               BorderSurface {
+                visible: root.needsCaldirUpdate
                 width: parent.width
                 radius: Style.cornerRadius
                 color: Style.normalFillFor(root.contentForeground, Color.accent)
                 borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
-                implicitHeight: setupCommandLabel.implicitHeight + Style.space(16)
+                implicitHeight: updateCommandLabel.implicitHeight + Style.space(16)
 
                 Text {
-                  id: setupCommandLabel
+                  id: updateCommandLabel
                   anchors.left: parent.left
                   anchors.right: copyCommandIcon.left
                   anchors.verticalCenter: parent.verticalCenter
                   anchors.leftMargin: Style.space(8)
                   anchors.rightMargin: Style.space(8)
-                  text: root.setupCommand
+                  text: root.updateCommand
                   font.family: "monospace"
                   font.pixelSize: Style.font.caption
                   color: root.contentForeground
@@ -319,7 +318,7 @@ Panel {
                   anchors.right: parent.right
                   anchors.rightMargin: Style.space(10)
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.setupCommandCopied ? "󰄬" : "󰆏"
+                  text: root.updateCommandCopied ? "󰄬" : "󰆏"
                   color: root.contentForeground
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.body
@@ -330,12 +329,12 @@ Panel {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: root.copySetupCommand()
+                  onClicked: root.copyUpdateCommand()
                 }
 
                 PanelToolTip {
                   visible: copyCommandArea.containsMouse
-                  text: root.setupCommandCopied ? "Copied" : "Copy command"
+                  text: root.updateCommandCopied ? "Copied" : "Copy command"
                   fontFamily: root.contentFontFamily
                 }
               }

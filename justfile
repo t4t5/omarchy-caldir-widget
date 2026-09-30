@@ -17,7 +17,7 @@ check:
 
 # Install the current code in the Omarchy bar:
 install:
-  ./scripts/dev-install.sh
+  ./scripts/dev-link.sh
 
 # Reload the current code in the Omarchy bar:
 reload:
@@ -25,4 +25,4 @@ reload:
 
 # Uninstall the current code from the Omarchy bar:
 uninstall:
-  ./scripts/dev-uninstall.sh
+  ./scripts/dev-unlink.sh
