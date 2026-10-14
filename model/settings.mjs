@@ -59,3 +59,31 @@ export function normalizeLookaheadMinutes(value) {
 export function normalizeHighlightEvents(value) {
   return normalizeEnum(value, HIGHLIGHT_EVENTS)
 }
+
+export const HIDE_ALL_DAY = {
+  key: "hideAllDay",
+  defaultValue: false
+}
+
+export const HIDE_WORKING_LOCATION = {
+  key: "hideWorkingLocation",
+  defaultValue: false
+}
+
+// Accepts the JSON booleans the settings view writes and the strings a hand
+// edit might leave behind.
+function normalizeBoolean(value, spec) {
+  if (typeof value === "boolean") return value
+  const wanted = String(value === undefined || value === null ? "" : value).trim().toLowerCase()
+  if (wanted === "true" || wanted === "1" || wanted === "yes") return true
+  if (wanted === "false" || wanted === "0" || wanted === "no") return false
+  return spec.defaultValue
+}
+
+export function normalizeHideAllDay(value) {
+  return normalizeBoolean(value, HIDE_ALL_DAY)
+}
+
+export function normalizeHideWorkingLocation(value) {
+  return normalizeBoolean(value, HIDE_WORKING_LOCATION)
+}

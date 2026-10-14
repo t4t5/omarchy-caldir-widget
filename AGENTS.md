@@ -19,6 +19,19 @@ hand-editable and the manifest's schema is only a hint. `BarWidget.qml`
 normalizes at the boundary so the rest of the code sees valid values, and a
 test checks the declarations against `manifest.json` so the two cannot drift.
 
+Calendar filtering lives in `model/calendars.mjs`. The `calendars` setting is
+resolved against renCal's `config.toml`, which `BarWidget.qml` watches with a
+`FileView`, into a list of allowed slugs or `null` for all. The filter runs on
+the widget side because `caldir events --calendar` accepts a single slug.
+Filters accept QML lists as well as Arrays: a Repeater's `modelData` arrives
+as an array-like, so `Array.isArray` is false for it.
+
+`SettingsView.qml` is the in-panel settings view. The shell has no settings
+API for plugins, so `BarWidget.saveSetting` queues writes to `bin/set-setting`,
+which edits this widget's `shell.json` entry with jq and asks the shell to
+reload. `settings` then updates in place. Google's `X-GOOGLE-EVENT-TYPE` is
+normalized to `event.eventType`, which `hideWorkingLocation` filters on.
+
 `NavigationController.qml` holds the panel's keyboard selection. The hero
 card's actions come from `Model.heroActions(event)` as an ordered list, and
 `selectedHeroAction` is an index into it, so an action the event does not offer

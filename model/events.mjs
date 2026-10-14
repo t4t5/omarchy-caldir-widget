@@ -8,6 +8,7 @@ import {
   MAX_FREEFORM_CHARS,
   MAX_ID_CHARS,
   MAX_TITLE_CHARS,
+  MAX_X_PROPERTIES,
   MAX_URL_CHARS,
   assertOutputWithinLimit,
   clamped,
@@ -52,6 +53,41 @@ export function parseCalendarColors(stdout) {
   return colors
 }
 
+// Name, slug, and color of every calendar, in caldir's order, for the settings view.
+export function parseCalendarList(stdout) {
+  const input = text(stdout)
+  assertOutputWithinLimit(input)
+  const parsed = JSON.parse(input)
+  if (!Array.isArray(parsed)) throw new Error("caldir output must be a JSON array")
+
+  const calendars = []
+  for (let i = 0; i < Math.min(parsed.length, MAX_CALENDARS); i++) {
+    const calendar = parsed[i]
+    if (!calendar || typeof calendar !== "object") continue
+
+    const slug = clamped(calendar.slug, MAX_ID_CHARS).trim()
+    if (slug === "") continue
+    calendars.push({
+      slug,
+      name: clamped(calendar.name, MAX_TITLE_CHARS).trim() || slug,
+      color: validCalendarColor(calendar.color)
+    })
+  }
+  return calendars
+}
+
+// Google marks working location, out-of-office, and focus blocks with
+// X-GOOGLE-EVENT-TYPE; other providers leave it unset.
+function eventType(raw) {
+  const properties = Array.isArray(raw.x_properties) ? raw.x_properties : []
+  for (let i = 0; i < Math.min(properties.length, MAX_X_PROPERTIES); i++) {
+    const property = properties[i]
+    if (property && lower(limited(property.name, MAX_ID_CHARS)) === "x-google-event-type")
+      return lower(limited(property.value, MAX_ENUM_CHARS))
+  }
+  return ""
+}
+
 // The RFC 5545 recurrence ID, taken from caldir's `{uid}__{recurrence_id}` instance ID.
 function recurrenceId(raw, uid) {
   if (text(raw.recurrence_id) === "" || uid === "") return ""
@@ -94,6 +130,7 @@ export function normalizedEvent(raw, calendarColors) {
     recurrence_id: recurrenceId(raw, uid),
     calendar,
     calendarColor,
+    eventType: eventType(raw),
     title: clamped(raw.title, MAX_TITLE_CHARS).trim() || "Untitled event",
     all_day: raw.all_day === true,
     start,

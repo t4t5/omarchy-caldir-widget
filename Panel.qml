@@ -37,6 +37,8 @@ Panel {
   readonly property var invitationState: hostWidget ? hostWidget.invitationState : null
   readonly property string timeFormat: hostWidget ? hostWidget.timeFormat : "24h"
   property date now: hostWidget ? hostWidget.now : new Date()
+  property bool showSettings: false
+  readonly property bool showAgenda: !showSettings
 
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
@@ -119,6 +121,7 @@ Panel {
   }
 
   onOpenedChanged: if (opened) {
+    showSettings = false
     navigation.resetSelection()
     if (scroll) scroll.contentY = 0
   }
@@ -137,14 +140,19 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       onMoveRequested: function(dx, dy) {
+        if (root.showSettings) return
         if (dx !== 0) navigation.moveHeroSelection(dx)
         if (dy !== 0) navigation.moveEventSelection(dy)
       }
-      onActivateRequested: navigation.activateSelection()
-      onCloseRequested: root.close()
+      onActivateRequested: if (!root.showSettings) navigation.activateSelection()
+      onCloseRequested: {
+        if (root.showSettings) root.showSettings = false
+        else root.close()
+      }
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(text) {
         if (text === "s" || text === "S") root.syncNow()
+        else if (text === ",") root.showSettings = !root.showSettings
       }
 
       Flickable {
@@ -163,7 +171,7 @@ Panel {
 
           Item {
             id: headerRow
-            visible: heroItem.visible || scheduleItem.visible || root.invitations.length > 0
+            visible: root.showSettings || heroItem.visible || scheduleItem.visible || root.invitations.length > 0
             width: parent.width
             height: visible ? Math.max(headingLabel.height, stampLabel.height, syncButton.height) : 0
             implicitHeight: height
@@ -172,7 +180,7 @@ Panel {
               id: headingLabel
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
-              text: "CALENDAR"
+              text: root.showSettings ? "SETTINGS" : "CALENDAR"
               color: Qt.darker(root.contentForeground, 1.5)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
@@ -182,8 +190,8 @@ Panel {
 
             Text {
               id: stampLabel
-              anchors.right: syncButton.visible ? syncButton.left : parent.right
-              anchors.rightMargin: syncButton.visible ? Style.space(8) : 0
+              anchors.right: settingsButton.visible ? settingsButton.left : parent.right
+              anchors.rightMargin: settingsButton.visible ? Style.space(8) : 0
               anchors.verticalCenter: parent.verticalCenter
               text: {
                 if (root.caldirState === "checking") return "Checking…"
@@ -196,6 +204,19 @@ Panel {
               color: root.loadError !== "" ? Color.urgent : Qt.darker(root.contentForeground, 1.5)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
+            }
+
+            PanelActionButton {
+              id: settingsButton
+              anchors.right: syncButton.visible ? syncButton.left : parent.right
+              anchors.rightMargin: syncButton.visible ? Style.space(4) : 0
+              anchors.verticalCenter: parent.verticalCenter
+              iconText: root.showSettings ? "󰅖" : "󰒓"
+              tooltipText: root.showSettings ? "Back to calendar" : "Settings (,)"
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              visible: root.caldirState === "ready"
+              onClicked: root.showSettings = !root.showSettings
             }
 
             PanelActionButton {
@@ -257,9 +278,19 @@ Panel {
             }
           }
 
+          SettingsView {
+            visible: root.showSettings
+            width: parent.width
+            height: visible ? implicitHeight : 0
+            hostWidget: root.hostWidget
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+            onDoneRequested: root.showSettings = false
+          }
+
           Item {
             id: setupItem
-            visible: !!root.hostWidget && root.caldirState !== "ready"
+            visible: root.showAgenda && !!root.hostWidget && root.caldirState !== "ready"
             width: parent.width
             height: visible ? setupColumn.implicitHeight : 0
             implicitHeight: height
@@ -364,7 +395,7 @@ Panel {
 
           Item {
             id: calendarSetupItem
-            visible: root.caldirState === "ready" && root.needsCalendarSetup
+            visible: root.showAgenda && root.caldirState === "ready" && root.needsCalendarSetup
             width: parent.width
             height: visible ? calendarSetupSurface.implicitHeight : 0
             implicitHeight: height
@@ -444,7 +475,7 @@ Panel {
 
           Column {
             width: parent.width
-            visible: root.caldirState === "ready" && !!root.invitationState
+            visible: root.showAgenda && root.caldirState === "ready" && !!root.invitationState
             spacing: Style.space(8)
 
             Text {
@@ -476,7 +507,7 @@ Panel {
           Column {
             id: invitationsColumn
             width: parent.width
-            visible: root.caldirState === "ready" && root.invitations.length > 0
+            visible: root.showAgenda && root.caldirState === "ready" && root.invitations.length > 0
             spacing: Style.space(8)
 
             PanelSectionHeader {
@@ -510,7 +541,7 @@ Panel {
 
           Item {
             id: heroItem
-            visible: root.caldirState === "ready" && !!root.next
+            visible: root.showAgenda && root.caldirState === "ready" && !!root.next
             width: parent.width
             height: visible ? heroBlock.implicitHeight : 0
             implicitHeight: height
@@ -660,7 +691,8 @@ Panel {
 
           Item {
             id: scheduleItem
-            visible: root.caldirState === "ready"
+            visible: root.showAgenda
+              && root.caldirState === "ready"
               && !root.needsCalendarSetup
               && root.scheduleGroups.length > 0
               && (root.loadError === "" || navigation.eventCount() > 0)
