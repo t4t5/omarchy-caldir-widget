@@ -49,6 +49,14 @@ export {
 } from "./model/settings.mjs"
 
 export {
+  CALENDARS,
+  normalizeCalendars,
+  parseRencalGroup,
+  resolveCalendarFilter,
+  filterByCalendars
+} from "./model/calendars.mjs"
+
+export {
   formatLabel,
   relativeStatus,
   meetingTimeLabel,
