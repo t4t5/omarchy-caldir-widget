@@ -40,6 +40,9 @@ It is also recommended to have [renCal](https://rencal.org) installed, so that y
 
 ### Shortcuts
 
+In the panel: <kbd>h</kbd>/<kbd>j</kbd>/<kbd>k</kbd>/<kbd>l</kbd> navigate,
+<kbd>s</kbd> syncs, and <kbd>,</kbd> opens settings.
+
 Set a key binding in `~/.config/hypr/bindings.lua` to open the widget more quickly:
 
 ```lua
@@ -60,7 +63,11 @@ omarchy shell org.ren.caldir refresh
 
 ### Preferences
 
-Set your preferences in `~/.config/omarchy/shell.json`:
+Open the panel and click the gear (or press <kbd>,</kbd>) to change these
+settings in place; <kbd>Esc</kbd> or **Done** returns to the agenda. Changes
+are saved to `~/.config/omarchy/shell.json` and apply immediately.
+
+You can also set your preferences in `~/.config/omarchy/shell.json` directly:
 
 ```json
 {
@@ -77,6 +84,8 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 | `lookaheadMinutes` | `30` | How long before it starts an event appears in the bar (1-1440) |
 | `highlightEvents` | `"meetings"` | `"meetings"` shows only events with a detected video link. `"all"` also shows events without one |
 | `calendars` | `""` | Which calendars to show. See [Choosing calendars](#choosing-calendars) |
+| `hideAllDay` | `false` | Hide all-day events from the agenda |
+| `hideWorkingLocation` | `false` | Hide Google Calendar's working location markers ("Home", "Office") |
 
 ### Choosing calendars
 
@@ -94,6 +103,9 @@ from `~/.config/rencal/config.toml` and follows it as you edit groups in renCal.
 
 When renCal is not installed, or the group is missing or empty, every calendar
 is shown rather than none. Pending invitations follow the same filter.
+
+In the settings view, **Choose** lists every calendar with a switch, starting
+from the calendars shown at the time.
 
 ### Choosing what reaches the bar
 

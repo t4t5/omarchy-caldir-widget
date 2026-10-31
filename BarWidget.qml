@@ -17,12 +17,22 @@ BarWidget {
   readonly property int lookaheadMinutes: Model.normalizeLookaheadMinutes(setting("lookaheadMinutes", null))
   readonly property string highlightEvents: Model.normalizeHighlightEvents(setting("highlightEvents", null))
   readonly property bool showingAllEvents: highlightEvents === Model.HIGHLIGHT_EVENTS_ALL
+  readonly property bool hideAllDay: Model.normalizeHideAllDay(setting("hideAllDay", null))
+  readonly property bool hideWorkingLocation: Model.normalizeHideWorkingLocation(setting("hideWorkingLocation", null))
   // Allowed calendar slugs, or null for all. Unset mirrors renCal's group.
-  readonly property var calendarFilter: Model.resolveCalendarFilter(setting("calendars", null), rencalConfigText)
+  readonly property var calendarsSetting: setting("calendars", null)
+  readonly property var calendarFilter: Model.resolveCalendarFilter(calendarsSetting, rencalConfigText)
+  readonly property var rencalGroups: Model.listRencalGroups(rencalConfigText)
   onCalendarFilterChanged: setEvents(agendaEvents)
+  onHideAllDayChanged: setEvents(agendaEvents)
+  onHideWorkingLocationChanged: setEvents(agendaEvents)
 
   property string rencalConfigText: ""
+  property bool rencalConfigFound: false
   property var agendaEvents: []
+  property var calendarList: []
+  property var pendingSettingWrites: []
+  property string settingError: ""
   property var scheduleGroups: []
   property var nextMeeting: null
   property var tooltipMeeting: null
@@ -125,6 +135,7 @@ BarWidget {
     if (exitCode === 0) {
       try {
         calendarColors = Model.parseCalendarColors(calendarStdout.text || "")
+        calendarList = Model.parseCalendarList(calendarStdout.text || "")
       } catch (error) {
         // Calendar colors are decorative; agenda loading should still proceed.
       }
@@ -161,7 +172,11 @@ BarWidget {
 
   function setEvents(allEvents) {
     agendaEvents = allEvents
-    var events = Model.filterByCalendars(allEvents, calendarFilter)
+    var events = Model.filterEvents(allEvents, {
+      calendars: calendarFilter,
+      hideAllDay: hideAllDay,
+      hideWorkingLocation: hideWorkingLocation
+    })
     scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
     var selections = Model.meetingSelections(events, now, {
       lookaheadMinutes: lookaheadMinutes,
@@ -169,6 +184,28 @@ BarWidget {
     })
     nextMeeting = selections.bar
     tooltipMeeting = selections.tooltip
+  }
+
+  // Settings are written one at a time so two quick toggles cannot race on
+  // shell.json; the shell reloads it and `settings` updates in place.
+  function saveSetting(key, value) {
+    pendingSettingWrites = pendingSettingWrites.concat([{
+      key: key,
+      value: value === undefined ? null : value
+    }])
+    writeNextSetting()
+  }
+
+  function writeNextSetting() {
+    if (settingProcess.running || pendingSettingWrites.length === 0) return
+    var next = pendingSettingWrites[0]
+    pendingSettingWrites = pendingSettingWrites.slice(1)
+    settingProcess.command = Model.boundedCommand([
+      Qt.resolvedUrl("bin/set-setting").toString().replace("file://", ""),
+      next.key,
+      JSON.stringify(next.value)
+    ])
+    settingProcess.running = true
   }
 
   function pull() {
@@ -206,8 +243,25 @@ BarWidget {
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
-    onLoaded: root.rencalConfigText = text()
-    onLoadFailed: root.rencalConfigText = ""
+    onLoaded: {
+      root.rencalConfigText = text()
+      root.rencalConfigFound = true
+    }
+    onLoadFailed: {
+      root.rencalConfigText = ""
+      root.rencalConfigFound = false
+    }
+  }
+
+  Process {
+    id: settingProcess
+    stderr: StdioCollector { id: settingStderr; waitForEnd: true }
+    onExited: function(exitCode) {
+      root.settingError = exitCode === 0
+        ? ""
+        : "Could not save setting. " + Model.truncate(String(settingStderr.text || "").trim(), 200)
+      root.writeNextSetting()
+    }
   }
 
   InvitationController {

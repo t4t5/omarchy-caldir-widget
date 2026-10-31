@@ -54,3 +54,52 @@ test("filterByCalendars keeps allowed calendars only", () => {
   assert.deepEqual(Model.filterByCalendars(qmlList, ["plan"]), [{ calendar: "plan" }])
   assert.deepEqual(Model.filterByCalendars(null, ["plan"]), [])
 })
+
+test("listRencalGroups lists [groups] keys in order", () => {
+  assert.deepEqual(Model.listRencalGroups(RENCAL), ["default", "work", "empty"])
+  assert.deepEqual(Model.listRencalGroups(""), [])
+})
+
+test("normalizedEvent reads Google's event type", () => {
+  const event = Model.normalizedEvent({
+    start: "2026-10-13",
+    end: "2026-10-14",
+    all_day: true,
+    calendar: "plan",
+    x_properties: [{ name: "X-GOOGLE-EVENT-TYPE", params: [], value: "workingLocation" }]
+  }, {})
+  assert.equal(event.eventType, Model.WORKING_LOCATION_EVENT_TYPE)
+  assert.equal(Model.normalizedEvent({ start: "2026-10-13T09:00:00Z" }, {}).eventType, "")
+})
+
+test("filterEvents hides all-day and working location events on request", () => {
+  const timed = { calendar: "plan", all_day: false, eventType: "" }
+  const holiday = { calendar: "plan", all_day: true, eventType: "" }
+  const home = { calendar: "plan", all_day: true, eventType: "workinglocation" }
+  const other = { calendar: "aaron-hurree-co", all_day: false, eventType: "" }
+  const events = [timed, holiday, home, other]
+  assert.deepEqual(Model.filterEvents(events, {}), events)
+  assert.deepEqual(Model.filterEvents(events, { calendars: ["plan"] }), [timed, holiday, home])
+  assert.deepEqual(Model.filterEvents(events, { hideWorkingLocation: true }), [timed, holiday, other])
+  assert.deepEqual(Model.filterEvents(events, { hideAllDay: true }), [timed, other])
+})
+
+test("normalizeHide* settings accept booleans and strings", () => {
+  assert.equal(Model.normalizeHideAllDay(true), true)
+  assert.equal(Model.normalizeHideAllDay("yes"), true)
+  assert.equal(Model.normalizeHideAllDay(null), false)
+  assert.equal(Model.normalizeHideWorkingLocation("false"), false)
+  assert.equal(Model.normalizeHideWorkingLocation("nonsense"), false)
+})
+
+test("parseCalendarList keeps name, slug, and color", () => {
+  const list = Model.parseCalendarList(JSON.stringify([
+    { slug: "plan", name: "Plan", color: "#AABBCC" },
+    { slug: "", name: "skipped" },
+    { slug: "todoist" }
+  ]))
+  assert.deepEqual(list, [
+    { slug: "plan", name: "Plan", color: "#aabbcc" },
+    { slug: "todoist", name: "todoist", color: "" }
+  ])
+})

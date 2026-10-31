@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Writes one setting into this widget's entry in ~/.config/omarchy/shell.json
+# and asks the running shell to reload it. The shell has no settings API for
+# plugins, so this mirrors omarchy-shell-config: jq to a temp file, then mv.
+#
+# Usage: set-setting <key> <json-value>   (null removes the key)
+set -euo pipefail
+
+widget_id="org.ren.caldir"
+config="${HOME}/.config/omarchy/shell.json"
+
+if [[ $# -ne 2 || ! $1 =~ ^[A-Za-z][A-Za-z0-9]*$ ]]; then
+  echo "usage: set-setting <key> <json-value>" >&2
+  exit 2
+fi
+[[ -s $config ]] || { echo "set-setting: $config not found" >&2; exit 1; }
+
+tmp=$(mktemp "${config}.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+
+jq -e --arg id "$widget_id" --arg key "$1" --argjson value "$2" '
+  def apply:
+    if $value == null then del(.[$key]) else .[$key] = $value end;
+  if [paths(objects | select(.id? == $id))] | length == 0 then
+    error("widget entry \($id) not found")
+  else
+    walk(if type == "object" and .id? == $id then apply else . end)
+  end
+' "$config" >"$tmp"
+
+chmod --reference="$config" "$tmp"
+mv "$tmp" "$config"
+trap - EXIT
+
+omarchy-shell -q shell reloadConfig

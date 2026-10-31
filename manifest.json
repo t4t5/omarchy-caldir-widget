@@ -22,7 +22,9 @@
       "daysAhead": 2,
       "lookaheadMinutes": 30,
       "highlightEvents": "meetings",
-      "calendars": ""
+      "calendars": "",
+      "hideAllDay": false,
+      "hideWorkingLocation": false
     },
     "schema": [
       {
@@ -60,6 +62,19 @@
         "label": "Calendars",
         "defaultValue": "",
         "description": "Empty mirrors renCal's default group. Use \"all\", \"rencal:<group>\", or comma-separated calendar slugs."
+      },
+      {
+        "key": "hideAllDay",
+        "type": "boolean",
+        "label": "Hide all-day events",
+        "defaultValue": false
+      },
+      {
+        "key": "hideWorkingLocation",
+        "type": "boolean",
+        "label": "Hide working location",
+        "defaultValue": false,
+        "description": "Hides Google Calendar's Home / Office working location markers."
       }
     ]
   }

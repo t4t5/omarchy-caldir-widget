@@ -111,10 +111,38 @@ export function resolveCalendarFilter(setting, rencalToml) {
   return slugs && slugs.length > 0 ? slugs : null
 }
 
+// Group names in [groups], in file order, so the settings view can offer them.
+export function listRencalGroups(toml) {
+  const lines = String(toml === undefined || toml === null ? "" : toml).split(/\r?\n/)
+  const groups = []
+  let inGroups = false
+  for (let i = 0; i < lines.length; i++) {
+    const line = stripComment(lines[i]).trim()
+    if (/^\[.*\]$/.test(line)) {
+      inGroups = line === "[groups]"
+      continue
+    }
+    if (!inGroups) continue
+    const match = /^("?)([^"=]+)\1\s*=\s*\[/.exec(line)
+    if (match && groups.length < MAX_SLUGS) groups.push(match[2].trim())
+  }
+  return groups
+}
+
 // Accepts QML lists as well as Arrays; both have a length and indices.
 export function filterByCalendars(events, allowed) {
   if (!events || typeof events.length !== "number") return []
   const list = Array.prototype.slice.call(events)
   if (!allowed) return list
   return list.filter(event => event && allowed.indexOf(event.calendar) !== -1)
+}
+
+// Google's working location markers ("Home", "Office") are all-day events.
+export const WORKING_LOCATION_EVENT_TYPE = "workinglocation"
+
+export function filterEvents(events, options) {
+  const settings = options || {}
+  return filterByCalendars(events, settings.calendars || null).filter(event =>
+    !(settings.hideAllDay && event.all_day === true)
+    && !(settings.hideWorkingLocation && event.eventType === WORKING_LOCATION_EVENT_TYPE))
 }
