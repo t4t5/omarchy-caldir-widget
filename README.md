@@ -86,6 +86,8 @@ detected. Everything else stays in the panel.
 Raise `lookaheadMinutes` if you want more warning before a call, and set
 `highlightEvents` to `"all"` if your calendar carries meetings that have no link
 (a room booking, a recurring focus block, an off-site).
+Hovering the bar shows the next qualifying event anywhere in the schedule, so
+you can see what is coming before it is close enough to reach the bar.
 
 Declined, all-day, and tentative events stay off the bar under both settings.
 When the selected event has no video link, the "Next" card drops its **Join

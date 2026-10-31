@@ -582,8 +582,8 @@ Panel {
                   width: parent.width
                   text: root.next
                     ? Model.meetingTimeLabel(root.next.startMs, root.next.endMs, root.now, root.timeFormat)
-                      + (Model.relativeStatus(root.next, root.now, root.timeFormat)
-                        ? " · " + Model.relativeStatus(root.next, root.now, root.timeFormat)
+                      + (Model.relativeStatus(root.next, root.now)
+                        ? " · " + Model.relativeStatus(root.next, root.now)
                         : "")
                     : ""
                   textFormat: Text.PlainText

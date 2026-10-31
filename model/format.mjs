@@ -47,26 +47,25 @@ export function meetingTimeLabel(start, end, now, timeFormat = "24h") {
   return labels.join(" · ")
 }
 
-function timeLeftLabel(end, current) {
-  const minutes = Math.max(1, Math.round((end - current) / MINUTE_MS))
-  if (minutes < 60) return minutes + " min left"
+function durationLabel(from, to) {
+  const minutes = Math.max(1, Math.round((to - from) / MINUTE_MS))
+  if (minutes < 60) return minutes + " min"
   const hours = Math.floor(minutes / 60)
   const remainder = minutes % 60
-  return (remainder ? hours + "h " + remainder + "m" : hours + "h") + " left"
+  return remainder ? hours + "h " + remainder + "m" : hours + "h"
 }
 
-export function relativeStatus(event, now, timeFormat = "24h") {
+// A countdown even for distant starts: the status always follows the event's
+// time range, so "starts at" would repeat its start time.
+export function relativeStatus(event, now) {
   if (!event) return ""
   const start = event.startMs
   const end = event.endMs
   const current = now.getTime()
   if (!isFinite(start) || !isFinite(end) || isNaN(current)) return ""
 
-  if (current < start) {
-    const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
-    return minutes >= 60 ? "starts at " + hm(start, timeFormat) : "starts in " + minutes + " min"
-  }
-  if (current < end) return timeLeftLabel(end, current)
+  if (current < start) return "starts in " + durationLabel(current, start)
+  if (current < end) return durationLabel(current, end) + " left"
   return ""
 }
 
@@ -97,7 +96,7 @@ export function formatLabel(event, now, timeFormat = "24h") {
   let suffix = ""
 
   if (current >= start && current < end) {
-    suffix = " · " + timeLeftLabel(end, current)
+    suffix = " · " + durationLabel(current, end) + " left"
   } else if (start > current && start - current <= 60 * MINUTE_MS) {
     const minutes = Math.max(1, Math.round((start - current) / MINUTE_MS))
     suffix = " · in " + minutes + " min"

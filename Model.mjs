@@ -33,6 +33,7 @@ export {
 
 export {
   nextMeeting,
+  meetingSelections,
   buildScheduleGroups,
   heroActions,
   nowMarkerIndex

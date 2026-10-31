@@ -18,6 +18,10 @@ options — and normalized there on the way in, because `shell.json` is
 hand-editable and the manifest's schema is only a hint. `BarWidget.qml`
 normalizes at the boundary so the rest of the code sees valid values, and a
 test checks the declarations against `manifest.json` so the two cannot drift.
+`Model.meetingSelections` picks the bar meeting and the hover preview with the
+same eligibility rules. Only the bar is limited by `lookaheadMinutes`; the
+preview takes the next eligible meeting in the loaded schedule, so it is never
+empty while the bar shows a meeting.
 
 `NavigationController.qml` holds the panel's keyboard selection. The hero
 card's actions come from `Model.heroActions(event)` as an ordered list, and

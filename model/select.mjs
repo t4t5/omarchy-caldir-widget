@@ -77,9 +77,15 @@ const NEXT_HANDOVER_MS = 10 * MINUTE_MS
 
 export function nextMeeting(events, now, options) {
   const settings = options || {}
-  const lookaheadMs = normalizeLookaheadMinutes(settings.lookaheadMinutes) * MINUTE_MS
-  const requireConferenceUrl = normalizeHighlightEvents(settings.highlightEvents) !== HIGHLIGHT_EVENTS_ALL
+  return selectNext(events, now, normalizeLookaheadMinutes(settings.lookaheadMinutes) * MINUTE_MS,
+    requiresConferenceUrl(settings))
+}
 
+function requiresConferenceUrl(settings) {
+  return normalizeHighlightEvents(settings.highlightEvents) !== HIGHLIGHT_EVENTS_ALL
+}
+
+function selectNext(events, now, lookaheadMs, requireConferenceUrl) {
   const current = now.getTime()
   const candidates = buildUpcoming(events, current, requireConferenceUrl)
 
@@ -97,6 +103,17 @@ export function nextMeeting(events, now, options) {
     }
   }
   return result
+}
+
+// The hover preview applies the bar's rules without its lookahead window, so it
+// names the next meeting anywhere in the loaded schedule while the bar stays
+// quiet until the meeting is close.
+export function meetingSelections(events, now, options) {
+  const settings = options || {}
+  return {
+    bar: nextMeeting(events, now, settings),
+    tooltip: selectNext(events, now, Infinity, requiresConferenceUrl(settings))
+  }
 }
 
 // A list rather than a set of flags, so the panel's selected action is an index

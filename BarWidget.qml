@@ -20,6 +20,7 @@ BarWidget {
 
   property var scheduleGroups: []
   property var nextMeeting: null
+  property var tooltipMeeting: null
   property var calendarColors: ({})
   property string loadError: ""
   property bool needsCalendarSetup: false
@@ -153,10 +154,12 @@ BarWidget {
 
   function setEvents(events) {
     scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
-    nextMeeting = Model.nextMeeting(events, now, {
+    var selections = Model.meetingSelections(events, now, {
       lookaheadMinutes: lookaheadMinutes,
       highlightEvents: highlightEvents
     })
+    nextMeeting = selections.bar
+    tooltipMeeting = selections.tooltip
   }
 
   function pull() {
@@ -482,10 +485,10 @@ BarWidget {
     if (loadError !== "") return Model.plainLine(loadError)
     if (invitationCount > 0) return invitationCount + (invitationCount === 1
       ? " invitation needs a response" : " invitations need a response") + "\nClick to RSVP"
-    if (!nextMeeting) return showingAllEvents ? "No upcoming events" : "No upcoming meetings"
-    var title = Model.plainLine(nextMeeting.title)
-    var range = Model.timeRange(nextMeeting.startMs, nextMeeting.endMs, timeFormat)
-    var status = Model.relativeStatus(nextMeeting, now, timeFormat)
+    if (!tooltipMeeting) return showingAllEvents ? "No upcoming events" : "No upcoming meetings"
+    var title = Model.plainLine(tooltipMeeting.title)
+    var range = Model.meetingTimeLabel(tooltipMeeting.startMs, tooltipMeeting.endMs, now, timeFormat)
+    var status = Model.relativeStatus(tooltipMeeting, now)
     var line = title + " · " + range + (status ? " (" + status + ")" : "")
     return line
   }
