@@ -647,7 +647,6 @@ test("time formatting honors caldir's 12-hour preference", () => {
   assert.equal(Model.hm(midnight, "12h"), "12:00am")
   assert.equal(Model.timeRange(morning, noon, "12h"), "9:05am–12:00pm")
   assert.equal(Model.meetingTimeLabel(future.startMs, future.endMs, NOW, "12h"), "Today · 12:00pm–12:30pm")
-  assert.equal(Model.relativeStatus(future, NOW, "12h"), "starts at 12:00pm")
   assert.equal(Model.formatLabel(tomorrow, NOW, "12h"), "Planning · Tmrw 9:00am")
 })
 

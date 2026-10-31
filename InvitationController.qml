@@ -78,7 +78,7 @@ Item {
     onExited: function(exitCode) {
       root.refreshing = false
       if (exitCode !== 0) {
-        var stderr = String(inviteStderr.text || "").trim()
+        const stderr = String(inviteStderr.text || "").trim()
         if (Model.isNoCalendarsError(stderr)) {
           root.invitations = []
           root.loadError = ""

@@ -86,7 +86,7 @@ BarWidget {
   function finishCaldirCheck(exitCode) {
     var executable = String(caldirCheckStdout.text || "").trim()
     if (exitCode !== 0 || executable === "") {
-      var wasMissing = caldirState === "missing"
+      const wasMissing = caldirState === "missing"
       caldirState = "missing"
       caldirExecutable = ""
       needsCalendarSetup = false
@@ -129,12 +129,12 @@ BarWidget {
   function finishRefresh(exitCode) {
     var events = []
     if (exitCode !== 0) {
-      var stderr = String(agendaStderr.text || "").trim()
+      const stderr = String(agendaStderr.text || "").trim()
       needsCalendarSetup = Model.isNoCalendarsError(stderr)
       if (needsCalendarSetup) {
         loadError = ""
       } else {
-        var detail = Model.truncate(stderr, 320)
+        const detail = Model.truncate(stderr, 320)
         loadError = detail !== ""
           ? "caldir failed: " + detail
           : "Could not load calendar events from caldir."
@@ -180,7 +180,7 @@ BarWidget {
 
   function finishPull(exitCode) {
     if (exitCode !== 0) {
-      var detail = Model.truncate(String(pullStderr.text || "").trim(), 320)
+      const detail = Model.truncate(String(pullStderr.text || "").trim(), 320)
       loadError = detail !== ""
         ? "caldir pull failed: " + detail
         : "Could not pull calendars from caldir."

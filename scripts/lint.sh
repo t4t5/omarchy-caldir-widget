@@ -21,12 +21,13 @@ output="$(/usr/lib/qt6/bin/qmllint -I "$import_dir" \
   --signal-handler-parameters disable \
   ./*.qml 2>&1)" || true
 
-# qs.Ui types its `bar` and Style's `font` as bare QtObject, and qmllint
-# can't follow Model.mjs's `export {...} from` re-exports, so members of
-# those are invisible to static analysis; every other missing-property hit
-# is real.
+# qs.Ui types its `bar` and Style's `font` as bare QtObject, Loader types
+# its `item` as QObject, and qmllint can't follow Model.mjs's
+# `export {...} from` re-exports, so members of those are invisible to
+# static analysis; every other missing-property hit is real.
 remaining="$(grep -E '^(Warning|Error)' <<<"$output" \
   | grep -vF 'not found on type "QObject"' \
+  | grep -vF 'with type QObject [missing-property]' \
   | grep -vF 'not found on type "Model"' || true)"
 
 if [[ -n "$remaining" ]]; then
