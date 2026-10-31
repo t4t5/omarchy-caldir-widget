@@ -26,3 +26,7 @@ reload:
 # Uninstall the current code from the Omarchy bar:
 uninstall:
   ./scripts/dev-unlink.sh
+
+# Release a new version: bump, commit and tag (e.g. just bump 1.3.0):
+bump version:
+  ./scripts/bump.sh {{version}}
