@@ -17,7 +17,12 @@ BarWidget {
   readonly property int lookaheadMinutes: Model.normalizeLookaheadMinutes(setting("lookaheadMinutes", null))
   readonly property string highlightEvents: Model.normalizeHighlightEvents(setting("highlightEvents", null))
   readonly property bool showingAllEvents: highlightEvents === Model.HIGHLIGHT_EVENTS_ALL
+  // Allowed calendar slugs, or null for all. Unset mirrors renCal's group.
+  readonly property var calendarFilter: Model.resolveCalendarFilter(setting("calendars", null), rencalConfigText)
+  onCalendarFilterChanged: setEvents(agendaEvents)
 
+  property string rencalConfigText: ""
+  property var agendaEvents: []
   property var scheduleGroups: []
   property var nextMeeting: null
   property var tooltipMeeting: null
@@ -30,7 +35,9 @@ BarWidget {
   property date now: new Date()
 
   readonly property bool invitationsSupported: caldirVersionCheck.invitationsSupported
-  readonly property var invitations: invitationsSupported ? invitationController.visibleInvitations : []
+  readonly property var invitations: invitationsSupported
+    ? Model.filterByCalendars(invitationController.visibleInvitations, calendarFilter)
+    : []
   readonly property var invitationState: invitationsSupported ? invitationController : null
   readonly property int invitationCount: invitations.length
 
@@ -152,7 +159,9 @@ BarWidget {
     setEvents(events)
   }
 
-  function setEvents(events) {
+  function setEvents(allEvents) {
+    agendaEvents = allEvents
+    var events = Model.filterByCalendars(allEvents, calendarFilter)
     scheduleGroups = Model.buildScheduleGroups(events, now, { daysAhead: daysAhead })
     var selections = Model.meetingSelections(events, now, {
       lookaheadMinutes: lookaheadMinutes,
@@ -187,6 +196,18 @@ BarWidget {
       return
     }
     refresh()
+  }
+
+  // renCal's groups decide which calendars are visible there; watch the file so
+  // editing a group in renCal updates the widget without a refresh.
+  FileView {
+    id: rencalConfig
+    path: Quickshell.env("HOME") + "/.config/rencal/config.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.rencalConfigText = text()
+    onLoadFailed: root.rencalConfigText = ""
   }
 
   InvitationController {

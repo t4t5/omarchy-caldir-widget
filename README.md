@@ -76,6 +76,24 @@ Set your preferences in `~/.config/omarchy/shell.json`:
 | `daysAhead` | `2` | Number of future schedule days to display |
 | `lookaheadMinutes` | `30` | How long before it starts an event appears in the bar (1-1440) |
 | `highlightEvents` | `"meetings"` | `"meetings"` shows only events with a detected video link. `"all"` also shows events without one |
+| `calendars` | `""` | Which calendars to show. See [Choosing calendars](#choosing-calendars) |
+
+### Choosing calendars
+
+caldir syncs every calendar your account can see, including coworkers'
+calendars and meeting rooms shared with you. renCal shows only the calendars in
+a group, and by default the widget does the same: it reads the `default` group
+from `~/.config/rencal/config.toml` and follows it as you edit groups in renCal.
+
+| `calendars` | Shows |
+| --- | --- |
+| `""` (or unset) | The calendars in renCal's `default` group |
+| `"rencal:<group>"` | The calendars in another renCal group |
+| `"all"` | Every calendar caldir syncs |
+| `"work, personal"` or `["work", "personal"]` | Exactly these calendar slugs (see `caldir calendars`) |
+
+When renCal is not installed, or the group is missing or empty, every calendar
+is shown rather than none. Pending invitations follow the same filter.
 
 ### Choosing what reaches the bar
 

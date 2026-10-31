@@ -23,6 +23,13 @@ same eligibility rules. Only the bar is limited by `lookaheadMinutes`; the
 preview takes the next eligible meeting in the loaded schedule, so it is never
 empty while the bar shows a meeting.
 
+Calendar filtering lives in `model/calendars.mjs`. The `calendars` setting is
+resolved against renCal's `config.toml`, which `BarWidget.qml` watches with a
+`FileView`, into a list of allowed slugs or `null` for all. The filter runs on
+the widget side because `caldir events --calendar` accepts a single slug.
+Filters accept QML lists as well as Arrays: a Repeater's `modelData` arrives
+as an array-like, so `Array.isArray` is false for it.
+
 `NavigationController.qml` holds the panel's keyboard selection. The hero
 card's actions come from `Model.heroActions(event)` as an ordered list, and
 `selectedHeroAction` is an index into it, so an action the event does not offer
