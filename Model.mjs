@@ -4,7 +4,8 @@ export {
   parseInvitations,
   invitationTimeLabel,
   rsvpCommand,
-  rsvpPushSucceeded
+  rsvpPushSucceeded,
+  rsvpStatusSettled
 } from "./model/invitations.mjs"
 
 export {

@@ -160,7 +160,12 @@ BarWidget {
   }
 
   function pull() {
-    if (syncing || invitationController.pendingSend) return
+    if (syncing) return
+    // A pending send blocks pulls; check whether it was sent elsewhere instead.
+    if (invitationController.pendingSend) {
+      invitationController.reconcilePendingSend()
+      return
+    }
     if (caldirState !== "ready" || caldirExecutable === "") {
       refresh()
       return

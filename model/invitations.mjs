@@ -4,8 +4,30 @@ import { MAX_EVENTS, MAX_ID_CHARS, MAX_TITLE_CHARS, assertOutputWithinLimit, cla
 
 export const INVITATION_ACTIONS = ["maybe", "decline", "accept"]
 
+function syncOutput(stdout) {
+  // caldir emits SGR colors even when its output is collected through a pipe.
+  return String(stdout || "").replace(/\x1b\[[0-9;]*m/g, "").replace(/\r\n/g, "\n").trim()
+}
+
 export function rsvpPushSucceeded(exitCode, stdout) {
-  return exitCode === 0 && /(?:^|\n)Pushed: \d+ created, [1-9]\d* updated, \d+ deleted(?:\r?\n|$)/.test(stdout)
+  if (exitCode !== 0) return false
+  const output = syncOutput(stdout)
+  return /(?:^|\n)Pushed: \d+ created, [1-9]\d* updated, \d+ deleted(?:\r?\n|$)/.test(output)
+    || /^(?:📅 [^\r\n]+\r?\n)?[ \t]*No changes to push$/.test(output)
+}
+
+// An external client can send the response after our original push failed.
+// Only a successful, single-calendar status with no outgoing changes clears it.
+export function rsvpStatusSettled(exitCode, stdout, calendar) {
+  if (exitCode !== 0) return false
+  const output = syncOutput(stdout)
+  const header = "📅 " + calendar + "\n"
+  if (!output.startsWith(header)) return false
+  const body = output.slice(header.length)
+  if (body === "   No changes") return true
+  const lines = body.split("\n")
+  return lines[0] === "   Remote changes (to pull):" && lines.length > 1
+    && lines.slice(1).every(line => /^   [+~-] .+/.test(line) || /^     \S.+/.test(line))
 }
 
 function invitePath(value) {

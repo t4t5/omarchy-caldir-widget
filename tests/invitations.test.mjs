@@ -76,8 +76,28 @@ test("RSVP commands pass hostile filenames literally, and allow only the three r
 
 test("provider failure with a successful caldir exit does not claim the response was sent", () => {
   assert.equal(Model.rsvpPushSucceeded(0, "work\n   Provider failed: offline\n"), false)
-  assert.equal(Model.rsvpPushSucceeded(0, "No changes to push\n"), false)
+  assert.equal(Model.rsvpPushSucceeded(0, "No changes to push\n"), true)
   assert.equal(Model.rsvpPushSucceeded(0, "Pushed: 1 created, 0 updated, 0 deleted\n"), false)
   assert.equal(Model.rsvpPushSucceeded(0, "work\n\nPushed: 0 created, 1 updated, 0 deleted\n"), true)
   assert.equal(Model.rsvpPushSucceeded(1, "Pushed: 0 created, 1 updated, 0 deleted\n"), false)
+})
+
+test("an already-sent response recognizes caldir's colored no-op output", () => {
+  const output = "📅 work\n\x1b[2m   No changes to push\x1b[0m\n"
+  assert.equal(Model.rsvpPushSucceeded(0, output), true)
+  assert.equal(Model.rsvpPushSucceeded(1, output), false)
+  assert.equal(Model.rsvpPushSucceeded(0, "Provider failed\n" + output), false)
+  assert.equal(Model.rsvpPushSucceeded(0, "work\n   No changes to push\n   Provider failed: offline\n"), false)
+})
+
+test("only a status without outgoing changes for the pending calendar clears an external send", () => {
+  const clean = "📅 work\n\x1b[2m   No changes\x1b[0m\n"
+  assert.equal(Model.rsvpStatusSettled(0, clean, "work"), true)
+  assert.equal(Model.rsvpStatusSettled(1, clean, "work"), false)
+  assert.equal(Model.rsvpStatusSettled(0, clean, "other"), false)
+  assert.equal(Model.rsvpStatusSettled(0, clean.replace(/\n/g, "\r\n"), "work"), true)
+  const incoming = "📅 work\n\x1b[2m   Remote changes (to pull):\x1b[0m\n   + Meeting\n   ~ Changed meeting\n     title: old → new\n"
+  assert.equal(Model.rsvpStatusSettled(0, incoming, "work"), true)
+  for (const output of ["", "📅 work\n   Provider failed: offline\n", "📅 work\n   Local changes (to push):\n   ~ Meeting\n", "📅 work\n   Local changes (to push):\n   ~ Meeting\n\n   Remote changes (to pull):\n   + Meeting\n", incoming + "   Provider failed\n", clean + "Provider failed\n"])
+    assert.equal(Model.rsvpStatusSettled(0, output, "work"), false)
 })
